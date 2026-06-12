@@ -25,7 +25,7 @@ End user setup is intentionally minimal: **applying the plugin auto wires `compo
 ```kotlin
 plugins {
     id("com.google.devtools.ksp") version "<matches your Kotlin version>"
-    id("com.github.skydoves.navgraph") version "0.1.0"
+    id("com.github.skydoves.navgraph") version "0.1.1"
 }
 ```
 
