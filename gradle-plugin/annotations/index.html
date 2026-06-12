@@ -1,0 +1,1089 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A Compose navigation flow graph toolkit that statically extracts your nav graph (Navigation 3 first class; Navigation 2 routes and Activities via annotations), renders device free Layoutlib thumbnails, and visualizes the whole app flow in Android Studio or IntelliJ.">
+      
+      
+        <meta name="author" content="Jaewoong (skydoves)">
+      
+      
+        <link rel="canonical" href="https://skydoves.github.io/compose-nav-graph/gradle-plugin/annotations/">
+      
+      
+        <link rel="prev" href="../getting-started/">
+      
+      
+        <link rel="next" href="../configuration/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/icon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Annotations - Compose Navigation Graph</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="deep-purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#annotations" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Compose Navigation Graph" class="md-header__button md-logo" aria-label="Compose Navigation Graph" data-md-component="logo">
+      
+  <img src="../../assets/icon.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Compose Navigation Graph
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Annotations
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/skydoves/compose-nav-graph" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Compose Navigation Graph
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Compose Navigation Graph" class="md-nav__button md-logo" aria-label="Compose Navigation Graph" data-md-component="logo">
+      
+  <img src="../../assets/icon.svg" alt="logo">
+
+    </a>
+    Compose Navigation Graph
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/skydoves/compose-nav-graph" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Compose Navigation Graph
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gradle Plugin
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Gradle Plugin
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Annotations
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Annotations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#navdestination" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @NavDestination
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#navedge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @NavEdge
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#navpreview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @NavPreview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#navgraphroot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @NavGraphRoot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#typed-arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typed Arguments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#putting-it-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Putting It Together
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../baseline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Nav Baseline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exporting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IDE Plugin
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    IDE Plugin
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ide-plugin/getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ide-plugin/graph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NavGraph Graph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ide-plugin/preview-gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Preview Gallery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ide-plugin/settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Settings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../kotlin-multiplatform/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kotlin Multiplatform
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../more-plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    More Plugins
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#navdestination" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @NavDestination
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#navedge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @NavEdge
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#navpreview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @NavPreview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#navgraphroot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @NavGraphRoot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#typed-arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typed Arguments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#putting-it-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Putting It Together
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="annotations">Annotations<a class="headerlink" href="#annotations" title="Permanent link">&para;</a></h1>
+<p>The nav graph is reconstructed from four annotations in <code>com.github.skydoves:compose-nav-graph-annotations</code> (added automatically by the Gradle plugin). They exist because Compose navigation is imperative: the route to composable wiring lives inside <code>entry&lt;Route&gt; { Screen() }</code> lambdas and transitions are <code>backStack.add(...)</code> calls in arbitrary function bodies. These are function <em>bodies</em>, which a static processor like KSP cannot read. The annotations are the explicit, refactor safe declarations that let the toolkit see your graph.</p>
+<p>Two kinds of classes become nodes:</p>
+<ul>
+<li><strong>Navigation 3 <code>NavKey</code> implementors</strong> declared in the module are picked up <strong>automatically</strong>, with no annotation needed for the node itself.</li>
+<li><strong>Any other class referenced by an annotation</strong> (a <code>route</code>, <code>from</code>, or <code>to</code> argument) also becomes a node: a Navigation 2 route, a plain Activity, anything resolvable on the classpath. A route does not need to implement <code>NavKey</code>, so an existing app lights up without refactoring.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Annotation</th>
+<th>Attach to</th>
+<th>What it declares</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>@NavDestination(route)</code></td>
+<td>the screen composable</td>
+<td>the click target for a route: where double click to source jumps</td>
+</tr>
+<tr>
+<td><code>@NavEdge(to, from, label)</code></td>
+<td>the source screen or its route class</td>
+<td>a navigation transition (edge) between two routes; repeatable</td>
+</tr>
+<tr>
+<td><code>@NavPreview(route, primary)</code></td>
+<td>a <code>@Preview</code> composable</td>
+<td>links that preview to a route so its render becomes the node thumbnail</td>
+</tr>
+<tr>
+<td><code>@NavGraphRoot(route)</code></td>
+<td>the start route class or its screen</td>
+<td>the graph's start destination</td>
+</tr>
+</tbody>
+</table>
+<h2 id="navdestination"><code>@NavDestination</code><a class="headerlink" href="#navdestination" title="Permanent link">&para;</a></h2>
+<p>Marks the top level composable that renders a destination. This is what gives each node a <strong>click target</strong>: selecting the route's node in the flow map jumps to this function. It's required because the route to composable link lives inside an <code>entry&lt;Route&gt; { … }</code> lambda body, which KSP can't see. The annotation records the function's fully qualified name and source location instead.</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@NavDestination</span><span class="p">(</span><span class="n">route</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Profile</span><span class="o">::</span><span class="n">class</span><span class="p">)</span>
+<span class="nd">@Composable</span>
+<span class="kd">fun</span><span class="w"> </span><span class="nf">ProfileScreen</span><span class="p">(</span><span class="n">state</span><span class="p">:</span><span class="w"> </span><span class="n">ProfileState</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* … */</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<p>The node's typed arguments come from the <strong>route class</strong> (see <a href="#typed-arguments">Typed arguments</a> below), not from the composable's parameters.</p>
+<h2 id="navedge"><code>@NavEdge</code><a class="headerlink" href="#navedge" title="Permanent link">&para;</a></h2>
+<p>Declares a navigation transition (edge) between two destinations. Because transitions are imperative <code>backStack.add(...)</code> calls inside function bodies, edges aren't statically decidable in general, so they're taken from this explicit annotation.</p>
+<p>Apply it on the <strong>source</strong>: either the source's route class declaration or its screen composable. <code>from</code> defaults to <code>Unit::class</code>, meaning "the route of whatever I'm attached to":</p>
+<ul>
+<li>on a screen composable, the source is taken from that same function's <code>@NavDestination(route)</code>;</li>
+<li>on a route class (for example a <code>NavKey</code>), the source is that class itself.</li>
+</ul>
+<p><code>@NavEdge</code> is <strong>repeatable</strong>, so a screen with several outgoing transitions carries several of them:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@NavEdge</span><span class="p">(</span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Profile</span><span class="o">::</span><span class="n">class</span><span class="p">)</span><span class="w">  </span><span class="c1">// from = this screen&#39;s route</span>
+<span class="nd">@NavEdge</span><span class="p">(</span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Settings</span><span class="o">::</span><span class="n">class</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;menu&quot;</span><span class="p">)</span>
+<span class="nd">@NavDestination</span><span class="p">(</span><span class="n">route</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Feed</span><span class="o">::</span><span class="n">class</span><span class="p">)</span>
+<span class="nd">@Composable</span>
+<span class="kd">fun</span><span class="w"> </span><span class="nf">FeedScreen</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* … */</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<p>The optional <code>label</code> is a human readable description of the transition (e.g. the triggering action), drawn on the edge in the graph.</p>
+<div class="admonition warning">
+<p class="admonition-title">Give <code>from</code> explicitly when there's no <code>@NavDestination</code></p>
+<p>On a screen composable that has <strong>no</strong> <code>@NavDestination</code>, the default <code>from</code> is undefined and <code>compose-nav-graph-ksp</code> reports an error. Either add <code>@NavDestination(route)</code> to that function, or pass an explicit <code>from</code> to the edge: <code>@NavEdge(from = Feed::class, to = Profile::class)</code>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Edges to non-NavKey destinations</p>
+<p><code>to</code> (and <code>from</code>) can reference any class, not only <code>NavKey</code> types. <code>@NavEdge(to = DetailActivity::class)</code> adds a plain Activity to the graph as a node, which is how mixed Navigation 2 / Activity flows are drawn without refactoring.</p>
+</div>
+<h2 id="navpreview"><code>@NavPreview</code><a class="headerlink" href="#navpreview" title="Permanent link">&para;</a></h2>
+<p>Links a <code>@Preview</code> composable to the route it depicts, so the generated graph can use that preview's rendered image as the node's <strong>thumbnail</strong>. There's no intrinsic connection between a <code>@Preview</code> function and an <code>entry&lt;Route&gt; { … }</code>, and nothing can infer it, so this annotation is the explicit link.</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@NavPreview</span><span class="p">(</span><span class="n">route</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Profile</span><span class="o">::</span><span class="n">class</span><span class="p">,</span><span class="w"> </span><span class="n">primary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">)</span>
+<span class="nd">@Preview</span>
+<span class="nd">@Composable</span>
+<span class="kd">fun</span><span class="w"> </span><span class="nf">ProfileScreenPreview</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">ProfileScreen</span><span class="p">(</span><span class="n">ProfileState</span><span class="p">.</span><span class="na">Preview</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Set <code>primary = true</code> (default <code>false</code>) on the preview you want as the canonical thumbnail. When a route has several previews (light/dark, empty/loaded), exactly one of them should be <code>primary</code>.</p>
+<p>The thumbnail also honors the preview's <strong><code>@Preview(locale = …)</code></strong> qualifier, declared directly or through a
+multipreview meta-annotation (a custom <code>@DevicePreview</code> carrying <code>@Preview(locale = "ko")</code>, for example). Both
+render backends apply it, so a localized preview renders with the same string and drawable resources Android
+Studio's preview would show. When a function's <code>@Preview</code>s declare different locales, the first one wins (one
+function renders one thumbnail).</p>
+<div class="admonition note">
+<p class="admonition-title">Why a separate preview function</p>
+<p>The renderer reads <code>@NavPreview</code> via reflection on the discovered preview at render time, so it's <code>RUNTIME</code>-retained. You annotate the <strong>preview</strong> (not the screen) so the toolkit renders the screen exactly as you'd preview it in Android Studio, with its sample/fake state wired in. <code>@PreviewParameter</code> providers are honored.</p>
+</div>
+<h2 id="navgraphroot"><code>@NavGraphRoot</code><a class="headerlink" href="#navgraphroot" title="Permanent link">&para;</a></h2>
+<p>Marks the graph's <strong>start destination</strong>, highlighted in the flow map (accent border + ★ glyph by default). Attach it to the start route class with no argument, or to a screen composable (where the route is taken from the same function's <code>@NavDestination</code>), or to any element with an explicit <code>route</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// On the route class:</span>
+<span class="nd">@NavGraphRoot</span>
+<span class="kd">data</span><span class="w"> </span><span class="kd">object</span><span class="w"> </span><span class="nc">Feed</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">NavKey</span>
+
+<span class="c1">// …or on the screen composable (route inferred from @NavDestination):</span>
+<span class="nd">@NavGraphRoot</span>
+<span class="nd">@NavDestination</span><span class="p">(</span><span class="n">route</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Feed</span><span class="o">::</span><span class="n">class</span><span class="p">)</span>
+<span class="nd">@Composable</span>
+<span class="kd">fun</span><span class="w"> </span><span class="nf">FeedScreen</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* … */</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">One start per project</p>
+<p><code>@NavGraphRoot</code> assumes a single start destination per project.</p>
+</div>
+<h2 id="typed-arguments">Typed Arguments<a class="headerlink" href="#typed-arguments" title="Permanent link">&para;</a></h2>
+<p>Each node's arguments are extracted statically from its <strong>route class</strong>, mirroring what kotlinx.serialization would serialize:</p>
+<ul>
+<li><strong>Primary constructor properties</strong>, in constructor order. A parameter with a default value is marked <strong>optional</strong>.</li>
+<li><strong>Body <code>val</code>/<code>var</code> properties with a backing field</strong>, in declared order, always optional.</li>
+<li><code>@Transient</code> properties are excluded, and <code>@SerialName</code> renames are honored.</li>
+<li>Each argument carries its type, type arguments, nullability, and whether it's an enum, and is drawn UML style on the node.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nd">@Serializable</span>
+<span class="kd">data</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nc">Profile</span><span class="p">(</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">userId</span><span class="p">:</span><span class="w"> </span><span class="kt">String</span><span class="p">,</span><span class="w">  </span><span class="c1">// userId: String</span>
+<span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">tab</span><span class="p">:</span><span class="w"> </span><span class="n">Tab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Tab</span><span class="p">.</span><span class="na">Posts</span><span class="p">,</span><span class="w">  </span><span class="c1">// tab: Tab (enum, optional)</span>
+<span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">NavKey</span>
+</code></pre></div>
+<p>A referenced non-<code>NavKey</code> node (for example an Activity reached mid flow) carries no arguments; its arbitrary fields aren't mined.</p>
+<h2 id="putting-it-together">Putting It Together<a class="headerlink" href="#putting-it-together" title="Permanent link">&para;</a></h2>
+<p>A fully annotated start screen with a thumbnail and two outgoing transitions:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@NavGraphRoot</span>
+<span class="nd">@NavDestination</span><span class="p">(</span><span class="n">route</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Feed</span><span class="o">::</span><span class="n">class</span><span class="p">)</span>
+<span class="nd">@NavEdge</span><span class="p">(</span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Profile</span><span class="o">::</span><span class="n">class</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;open profile&quot;</span><span class="p">)</span>
+<span class="nd">@NavEdge</span><span class="p">(</span><span class="n">to</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Settings</span><span class="o">::</span><span class="n">class</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;menu&quot;</span><span class="p">)</span>
+<span class="nd">@Composable</span>
+<span class="kd">fun</span><span class="w"> </span><span class="nf">FeedScreen</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* … */</span><span class="w"> </span><span class="p">}</span>
+
+<span class="nd">@NavPreview</span><span class="p">(</span><span class="n">route</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Feed</span><span class="o">::</span><span class="n">class</span><span class="p">,</span><span class="w"> </span><span class="n">primary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">)</span>
+<span class="nd">@Preview</span>
+<span class="nd">@Composable</span>
+<span class="kd">fun</span><span class="w"> </span><span class="nf">FeedScreenPreview</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">FeedScreen</span><span class="p">()</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Run <code>./gradlew :app:generateNavGraph</code> and this screen appears as the start node, with its rendered thumbnail and two labeled edges to <code>Profile</code> and <code>Settings</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.tabs.link", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
