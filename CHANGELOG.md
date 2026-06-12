@@ -5,12 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.1] - 2026-06-13
 
 ### Added
 - **`@Preview(locale = …)` support for thumbnails** ([#7](https://github.com/skydoves/compose-nav-graph/issues/7)): the KSP processor now captures the preview's locale qualifier (declared directly or via a multipreview meta-annotation) into the manifest, and both render backends apply it (Layoutlib through the renderer's preview params, Robolectric through a composition-scoped configuration-context override), so localized previews render with the same resources Android Studio shows.
+- **`navgraph { robolectricApplication }`** ([#6](https://github.com/skydoves/compose-nav-graph/pull/6), thanks [@pesjak](https://github.com/pesjak)): point the Robolectric render at a minimal test-only `Application` (emitted as `@Config(application = …)` on the generated render test), so apps that initialize device-backed SDKs in `Application.onCreate` can render thumbnails.
 
 ### Fixed
+- **Gradle configuration cache compatibility** ([#4](https://github.com/skydoves/compose-nav-graph/pull/4), thanks [@pesjak](https://github.com/pesjak)): the render wiring no longer captures `TaskProvider`s in the unit-test task's `onlyIf` spec, so `generateNavGraph` and the export tasks run with the configuration cache enabled (no more `--no-configuration-cache`).
+- **Single-module Compose Multiplatform apps** ([#5](https://github.com/skydoves/compose-nav-graph/pull/5), thanks [@pesjak](https://github.com/pesjak)): a module that is both KMP and `com.android.application` (the KMP wizard default) now renders thumbnails from its own linked resources instead of skipping them.
 - The generated `navgraph.version` resource (which pins the auto-wired `compose-nav-graph-annotations` / `compose-nav-graph-ksp` / `compose-nav-graph-testing` versions) is regenerated when `VERSION_NAME` changes instead of staying stale.
 
 ## [0.1.0] - 2026-06-01

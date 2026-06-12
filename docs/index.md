@@ -34,7 +34,7 @@ In your app (or feature) module's `build.gradle.kts`, apply the navgraph plugin 
 ```kotlin
 plugins {
     id("com.google.devtools.ksp") version "<ksp-version>"
-    id("com.github.skydoves.navgraph") version "0.1.0"
+    id("com.github.skydoves.navgraph") version "0.1.1"
 }
 ```
 
