@@ -52,6 +52,7 @@ public class NavGraphGradlePlugin : Plugin<Project> {
       ext.allowMissingBaseline.convention(false)
       ext.renderThumbnails.convention(true)
       ext.renderBackend.convention(RenderBackend.AUTO)
+      ext.robolectricApplication.convention("")
       ext.variant.convention("")
       ext.autoDependencies.convention(true)
       ext.aggregate.convention(true)
@@ -396,7 +397,7 @@ public class NavGraphGradlePlugin : Plugin<Project> {
         }
       }
       val roboAnchors = if (roboSpecs.isNotEmpty()) {
-        wireRobolectric(this, kspTask, roboSpecs, variant, kmp)
+        wireRobolectric(this, kspTask, roboSpecs, variant, kmp, ext.robolectricApplication.get())
       } else {
         emptyMap()
       }
@@ -634,6 +635,7 @@ public class NavGraphGradlePlugin : Plugin<Project> {
     specs: List<RoboSpec>,
     variant: String?,
     kmp: Boolean,
+    robolectricApplication: String,
   ): Map<String, TaskProvider<*>> {
     with(project) {
       // The variant whose unit-test compilation hosts the render: the resolved Android variant for plain-Android;
@@ -662,7 +664,7 @@ public class NavGraphGradlePlugin : Plugin<Project> {
       }
 
       val genDir = layout.buildDirectory.dir("generated/navgraph/robolectric").get().asFile
-      writeRobolectricTest(genDir)
+      writeRobolectricTest(genDir, robolectricApplication)
       addKotlinSrcDir(this, testSourceSets, genDir)
 
       // The render runs INSIDE the consumer's own `test<Variant>UnitTest` (an AGP `AndroidUnitTest`): only AGP
@@ -985,17 +987,29 @@ public class NavGraphGradlePlugin : Plugin<Project> {
 
   /** Write the one-line `NavGraphRobolectricRenderTest` subclass (idempotent — only when missing/changed, so it
    *  never needlessly invalidates the unit-test compilation). JUnit discovers it; `@RunWith`/`@Config` are
-   *  inherited from [com.github.skydoves.navgraph.testing.NavPreviewRenderTestBase]. */
-  private fun writeRobolectricTest(genDir: File) {
+   *  inherited from [com.github.skydoves.navgraph.testing.NavPreviewRenderTestBase]. A non-blank
+   *  [robolectricApplication] (`navgraph { robolectricApplication }`) is emitted as `@Config(application = …)` on
+   *  the subclass — Robolectric overlays class-hierarchy configs per field, so sdk/qualifiers stay inherited. */
+  private fun writeRobolectricTest(genDir: File, robolectricApplication: String) {
     val pkgDir = File(genDir, "com/skydoves/navgraph/generated").apply { mkdirs() }
     val file = File(pkgDir, "NavGraphRobolectricRenderTest.kt")
+    val configImport = if (robolectricApplication.isNotBlank()) {
+      "\nimport org.robolectric.annotation.Config"
+    } else {
+      ""
+    }
+    val configAnnotation = if (robolectricApplication.isNotBlank()) {
+      "@Config(application = $robolectricApplication::class)\n"
+    } else {
+      ""
+    }
     val content =
       """
       |package com.github.skydoves.navgraph.generated
       |
-      |import com.github.skydoves.navgraph.testing.NavPreviewRenderTestBase
+      |import com.github.skydoves.navgraph.testing.NavPreviewRenderTestBase$configImport
       |
-      |internal class NavGraphRobolectricRenderTest : NavPreviewRenderTestBase()
+      |${configAnnotation}internal class NavGraphRobolectricRenderTest : NavPreviewRenderTestBase()
       |
       """.trimMargin()
     if (!file.isFile || file.readText() != content) file.writeText(content)
