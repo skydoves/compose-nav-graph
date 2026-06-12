@@ -103,7 +103,9 @@ public abstract class MergeNavGraphTask : DefaultTask() {
         it.jsonObject.containsKey("thumbnail")
       }
     }
-    logger.lifecycle("navgraph: wrote ${out.path} — ${nodes.size} nodes, $filled thumbnails merged.")
+    logger.lifecycle(
+      "navgraph: wrote ${out.path} — ${nodes.size} nodes, $filled thumbnails merged.",
+    )
   }
 }
 

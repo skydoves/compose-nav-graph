@@ -162,7 +162,12 @@ public class NavGraphGradlePlugin : Plugin<Project> {
       if (robolectric && android && ext.renderThumbnails.get()) {
         val testCfg = if (kmp) "androidUnitTestImplementation" else "testImplementation"
         if (configurations.findByName(testCfg) != null) {
-          (dependencies.add(testCfg, "com.github.skydoves:compose-nav-graph-testing:$v") as? ModuleDependency)
+          (
+            dependencies.add(
+              testCfg,
+              "com.github.skydoves:compose-nav-graph-testing:$v",
+            ) as? ModuleDependency
+            )
             ?.exclude(mapOf("group" to "androidx.compose", "module" to "compose-bom"))
         }
         // The render launches ComponentActivity via the compose test rule, which resolves it from the consumer's
@@ -217,7 +222,9 @@ public class NavGraphGradlePlugin : Plugin<Project> {
     project.configurations.configureEach {
       if (isNavGraphKspConfig(name) && ext.autoDependencies.get()) {
         dependencies.add(
-          project.dependencies.create("com.github.skydoves:compose-nav-graph-ksp:${navgraphVersion()}"),
+          project.dependencies.create(
+            "com.github.skydoves:compose-nav-graph-ksp:${navgraphVersion()}",
+          ),
         )
       }
     }
@@ -235,8 +242,8 @@ public class NavGraphGradlePlugin : Plugin<Project> {
           .invoke(kspExt, "navgraph.module", project.path)
       }.onFailure {
         project.logger.warn(
-          "navgraph: could not pass the module path to KSP (${it.message}); the preview gallery will " +
-            "group previews without module identity (single-module mode).",
+          "navgraph: could not pass the module path to KSP (${it.message}); the preview " +
+            "gallery will group previews without module identity (single-module mode).",
         )
       }
     }
@@ -347,7 +354,8 @@ public class NavGraphGradlePlugin : Plugin<Project> {
       }
       val renderGalleryLayoutlib = if (doGalleryRender && layoutlib != null) {
         registerLayoutlibRender(
-          this, "renderNavGraphGalleryLayoutlib", variant, kmp, kspTask, layoutlib, galleryManifestFile,
+          this, "renderNavGraphGalleryLayoutlib", variant, kmp, kspTask, layoutlib,
+          galleryManifestFile,
           layout.buildDirectory.dir(
             "navgraph-gallery-render",
           ),
@@ -719,7 +727,10 @@ public class NavGraphGradlePlugin : Plugin<Project> {
           active.forEachIndexed { i, w ->
             systemProperty("navgraph.renderList.$i", w.renderListFile.get().asFile.absolutePath)
             systemProperty("navgraph.thumbsDir.$i", w.spec.thumbsDir.get().asFile.absolutePath)
-            systemProperty("navgraph.previewIndex.$i", w.spec.previewIndex.get().asFile.absolutePath)
+            systemProperty(
+              "navgraph.previewIndex.$i",
+              w.spec.previewIndex.get().asFile.absolutePath,
+            )
           }
           // Run iff ANY active pipeline has a non-empty render list (a Layoutlib failure to fill somewhere).
           onlyIf {

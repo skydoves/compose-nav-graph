@@ -26,9 +26,10 @@ import org.junit.Test
 
 class NavGraphPluginTest {
 
-  private fun navgraphProject(): Project = ProjectBuilder.builder().withName("sample").build().also {
-    it.pluginManager.apply("com.github.skydoves.navgraph")
-  }
+  private fun navgraphProject(): Project =
+    ProjectBuilder.builder().withName("sample").build().also {
+      it.pluginManager.apply("com.github.skydoves.navgraph")
+    }
 
   @Test
   fun registersNavGraphExtensionWithDefaults() {
