@@ -6,6 +6,7 @@ The Gradle plugin is configured through the `navgraph { }` block in your module'
 navgraph {
     renderThumbnails.set(true)  // default
     renderBackend.set(RenderBackend.AUTO)  // default
+    robolectricApplication.set("")  // default: the app's real Application
     variant.set("")  // default: auto detect
     autoDependencies.set(true)  // default
     aggregate.set(true)  // default
@@ -51,6 +52,25 @@ navgraph {
     renderBackend.set(RenderBackend.ROBOLECTRIC)
 }
 ```
+
+## `robolectricApplication`
+
+**Type:** `String` · **Default:** `""` (the app's real `Application`)
+
+The fully qualified name of the `Application` class the **Robolectric** render boots. By default Robolectric runs your real `Application.onCreate`, which crashes the render when it initializes SDKs that need a device or Play services (billing, push, analytics). Point this at a minimal test only `Application` — typically in the unit test source set, doing at most DI setup — to render previews without that init:
+
+```kotlin
+navgraph {
+    robolectricApplication.set("com.example.app.RenderApplication")
+}
+```
+
+```kotlin
+// src/test/kotlin (or src/androidUnitTest/kotlin for KMP)
+class RenderApplication : Application()
+```
+
+The value is emitted as `@Config(application = …)` on the generated render test; the sdk and qualifiers stay inherited from the base test class.
 
 ## `variant`
 

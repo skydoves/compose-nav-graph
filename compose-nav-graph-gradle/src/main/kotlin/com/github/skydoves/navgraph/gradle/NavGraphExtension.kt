@@ -57,6 +57,16 @@ public abstract class NavGraphExtension {
   public abstract val renderBackend: Property<RenderBackend>
 
   /**
+   * The fully-qualified name of the `android.app.Application` class the **Robolectric** render boots, e.g.
+   * `"com.example.RenderApplication"` (default blank — the consumer's real Application from the merged manifest).
+   * Robolectric runs the real `Application.onCreate`, which crashes the render when it initializes SDKs that
+   * need a device or Play services (billing, push, analytics, …). Point this at a minimal test-only Application
+   * (typically in the unit-test source set, doing at most DI setup) to render previews without that init. Emitted
+   * as `@Config(application = …)` on the generated render test; sdk/qualifiers stay inherited from the base class.
+   */
+  public abstract val robolectricApplication: Property<String>
+
+  /**
    * The Android **variant** to extract from, e.g. `"debug"` (default) or, for a flavored app/library,
    * `"demoDebug"`. Blank (the default) means *auto-detect* the first `…DebugKotlin` KSP variant — so a flavored
    * project usually just works without setting this. Set it only to pin a specific flavor's graph. Ignored for
