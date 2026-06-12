@@ -716,6 +716,10 @@ public class NavGraphGradlePlugin : Plugin<Project> {
       gradle.taskGraph.whenReady {
         val active = wired.filter { hasTask(it.anchor.get()) }
         if (active.isEmpty()) return@whenReady
+        // Materialized OUTSIDE the closures attached to the test task: the configuration cache serializes that
+        // task's whole state — sysprops AND its onlyIf specs — so a spec capturing `active` would drag each
+        // Wired's TaskProviders (realized DefaultTasks) into the entry and fail serialization. Plain Files don't.
+        val renderListFiles = active.map { it.renderListFile.get().asFile }
         agpTest.get().apply {
           filter {
             includeTestsMatching("*NavGraphRobolectricRenderTest")
@@ -734,9 +738,7 @@ public class NavGraphGradlePlugin : Plugin<Project> {
           }
           // Run iff ANY active pipeline has a non-empty render list (a Layoutlib failure to fill somewhere).
           onlyIf {
-            active.any { w ->
-              w.renderListFile.get().asFile.let { it.isFile && it.readText().isNotBlank() }
-            }
+            renderListFiles.any { it.isFile && it.readText().isNotBlank() }
           }
           // Force the render to run when requested (the prior thumbnails aren't a tracked output of the test).
           outputs.upToDateWhen { false }
