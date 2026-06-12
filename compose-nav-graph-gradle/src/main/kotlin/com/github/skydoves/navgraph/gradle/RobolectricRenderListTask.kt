@@ -29,7 +29,7 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.work.DisableCachingByDefault
 
 /**
- * Writes the TSV render-list (`methodFqn\tnodeId\tpreviewName\tprimary`, one preview per line) that the
+ * Writes the TSV render-list (`methodFqn\tnodeId\tpreviewName\tprimary[\tlocale]`, one preview per line) that the
  * generated `NavGraphRobolectricRenderTest` reads via the `navgraph.renderList` system property. In `ROBOLECTRIC` mode
  * every `@NavPreview` is listed; in `AUTO` mode only the previews Layoutlib **failed** to render are listed —
  * derived from the Layoutlib `results.json` ([readLayoutlibResults] + [isLayoutlibSuccess]), the single source
@@ -81,6 +81,7 @@ public abstract class RobolectricRenderListTask : DefaultTask() {
       val primary: Boolean,
       val methodFqn: String,
       val id: String,
+      val locale: String?,
     )
     val shots = buildList {
       var i = 0
@@ -88,7 +89,7 @@ public abstract class RobolectricRenderListTask : DefaultTask() {
         node.previews.forEach { pv ->
           val method = pv.previewMethodFqn
           if (!method.isNullOrBlank()) {
-            add(Shot(node.id, pv.previewName, pv.primary, method, "nav${i++}"))
+            add(Shot(node.id, pv.previewName, pv.primary, method, "nav${i++}", pv.locale))
           }
         }
       }
@@ -115,9 +116,14 @@ public abstract class RobolectricRenderListTask : DefaultTask() {
 
     val out = renderList.get().asFile
     out.parentFile.mkdirs()
+    // TSV fields are TRAILING-additive only: NavPreviewRenderer in compose-nav-graph-testing parses this
+    // line format, and the plugin auto-wires that artifact at its own version, so both sides move in step.
+    // The locale field is emitted only when present, keeping locale-less lines byte-identical to the
+    // 4-field format an older, explicitly-pinned testing artifact still parses correctly.
     out.writeText(
       selected.joinToString("") { s ->
-        "${s.methodFqn}\t${s.nodeId}\t${s.previewName}\t${s.primary}\n"
+        "${s.methodFqn}\t${s.nodeId}\t${s.previewName}\t${s.primary}" +
+          "${s.locale?.let { "\t$it" }.orEmpty()}\n"
       },
     )
     logger.lifecycle(

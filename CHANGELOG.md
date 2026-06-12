@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **`@Preview(locale = …)` support for thumbnails** ([#7](https://github.com/skydoves/compose-nav-graph/issues/7)): the KSP processor now captures the preview's locale qualifier (declared directly or via a multipreview meta-annotation) into the manifest, and both render backends apply it (Layoutlib through the renderer's preview params, Robolectric through a composition-scoped configuration-context override), so localized previews render with the same resources Android Studio shows.
+
+### Fixed
+- The generated `navgraph.version` resource (which pins the auto-wired `compose-nav-graph-annotations` / `compose-nav-graph-ksp` / `compose-nav-graph-testing` versions) is regenerated when `VERSION_NAME` changes instead of staying stale.
+
 ## [0.1.0] - 2026-06-01
 
 ### Added

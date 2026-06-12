@@ -126,6 +126,10 @@ public data class NavArg(
  *   The device-free renderer needs each provider to instantiate the composable's sample value — without them a
  *   parameterized `@NavPreview` (very common in real apps) can't render and yields a blank/failed thumbnail.
  * @property primary whether this is the canonical thumbnail for the route (`@NavPreview.primary`).
+ * @property locale the `@Preview(locale = …)` resource qualifier (e.g. `"ko"`, `"fr-rFR"`) the function's
+ *   `@Preview` declares, directly or via a multipreview meta-annotation; null when none is declared. Both
+ *   render backends apply it so the thumbnail matches what Android Studio's preview shows. Additive since
+ *   schema 1 (absent in older manifests → null).
  */
 @Serializable
 public data class NavPreviewRef(
@@ -135,6 +139,7 @@ public data class NavPreviewRef(
   val previewParameters: List<NavPreviewParam> = emptyList(),
   val thumbnail: String? = null,
   val primary: Boolean = false,
+  val locale: String? = null,
 )
 
 /**

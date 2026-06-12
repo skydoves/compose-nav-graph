@@ -15,6 +15,5 @@
      limitations under the License.
 -->
 <resources>
-    <string name="app_name">navgraph sample</string>
-    <string name="settings_greeting">Settings</string>
+    <string name="settings_greeting">설정</string>
 </resources>

@@ -316,6 +316,56 @@ class NavGraphProcessorTest {
     assertEquals("com.app.ProfilePreview", preview.previewFqn)
     assertEquals("com.app.PreviewsKt.ProfilePreview", preview.previewMethodFqn)
     assertTrue(preview.primary)
+    assertEquals("a preview without @Preview(locale) carries none", null, preview.locale)
+  }
+
+  @Test
+  fun navPreview_carriesDirectPreviewLocale() {
+    val graph = compileNavGraph(
+      SourceFile.kotlin(
+        "Previews.kt",
+        """
+        package com.app
+        import androidx.compose.ui.tooling.preview.Preview
+        import androidx.navigation3.runtime.NavKey
+        import com.github.skydoves.navgraph.annotations.NavPreview
+        class Profile : NavKey
+        @Preview(locale = "ko")
+        @NavPreview(route = Profile::class, primary = true)
+        fun ProfilePreview() {}
+        """.trimIndent(),
+      ),
+      PREVIEW_STUB,
+    )
+
+    assertEquals("ko", graph.node("Profile").previews.single().locale)
+  }
+
+  @Test
+  fun navPreview_carriesLocaleFromMultipreviewMetaAnnotation() {
+    val graph = compileNavGraph(
+      SourceFile.kotlin(
+        "Previews.kt",
+        """
+        package com.app
+        import androidx.compose.ui.tooling.preview.Preview
+        import androidx.navigation3.runtime.NavKey
+        import com.github.skydoves.navgraph.annotations.NavPreview
+
+        @Preview(name = "Light", locale = "fr-rFR")
+        @Preview(name = "Dark", locale = "fr-rFR")
+        annotation class DevicePreview
+
+        class Profile : NavKey
+        @DevicePreview
+        @NavPreview(route = Profile::class, primary = true)
+        fun ProfilePreview() {}
+        """.trimIndent(),
+      ),
+      PREVIEW_STUB,
+    )
+
+    assertEquals("fr-rFR", graph.node("Profile").previews.single().locale)
   }
 
   @Test

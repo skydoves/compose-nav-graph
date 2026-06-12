@@ -37,6 +37,9 @@ tasks.withType<Test>().configureEach { useJUnit() }
 val generateNavGraphVersion = tasks.register("generateNavGraphVersion") {
   val outDir = layout.buildDirectory.dir("generated/navgraphversion")
   val versionValue = version.toString()
+  // Without this input the task stays UP-TO-DATE across a VERSION_NAME bump, leaving a stale
+  // resource — consumers would then auto-wire the previous release's artifacts.
+  inputs.property("version", versionValue)
   outputs.dir(outDir)
   doLast {
     outDir.get().file("navgraph.version").asFile.apply {
