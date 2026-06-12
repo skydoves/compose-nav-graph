@@ -1,4 +1,4 @@
-# compose-nav-graph - Changelog
+# Compose Navigation Graph - Changelog
 
 All notable changes to this project will be documented in this file.
 

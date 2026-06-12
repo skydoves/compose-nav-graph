@@ -1,6 +1,6 @@
 # Getting Started
 
-The compose-nav-graph Gradle plugin (`com.github.skydoves.navgraph`) wires the whole toolkit into your build. When applied, it adds the `compose-nav-graph-annotations` and `compose-nav-graph-ksp` dependencies, registers the KSP processor that statically extracts your nav graph, sets up device free thumbnail rendering, and registers the nav tasks (`generateNavGraph`, `navDump` / `navCheck`, the HTML and PNG exports, and the preview gallery). It supports Kotlin Multiplatform and multi module projects.
+The Compose Navigation Graph Gradle plugin (`com.github.skydoves.navgraph`) wires the whole toolkit into your build. When applied, it adds the `compose-nav-graph-annotations` and `compose-nav-graph-ksp` dependencies, registers the KSP processor that statically extracts your nav graph, sets up device free thumbnail rendering, and registers the nav tasks (`generateNavGraph`, `navDump` / `navCheck`, the HTML and PNG exports, and the preview gallery). It supports Kotlin Multiplatform and multi module projects.
 
 The toolkit is not tied to Navigation 3. **Navigation 3 `NavKey` destinations are picked up automatically**, and any other class wires in through the annotations: Navigation 2 routes, or even plain Activities referenced by `@NavEdge` or `@NavPreview`, become nodes without implementing `NavKey`. An existing app lights up without refactoring.
 

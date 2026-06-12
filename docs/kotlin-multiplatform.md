@@ -1,6 +1,6 @@
 # Kotlin Multiplatform
 
-compose-nav-graph supports **Kotlin Multiplatform** out of the box. The annotations are a KMP library that lives in
+Compose Navigation Graph supports **Kotlin Multiplatform** out of the box. The annotations are a KMP library that lives in
 your `commonMain` source set (published for `android`, `jvm`, `iosArm64` / `iosSimulatorArm64` / `iosX64`, `js`, and
 `wasmJs`), and the Gradle plugin detects your module's shape and wires the right KSP pass for you. There is no
 KMP specific configuration: you apply the same two plugins as on a plain Android module.

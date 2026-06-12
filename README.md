@@ -255,7 +255,7 @@ The full guide, including multi module baselines and CI integration, lives in th
 
 ## Kotlin Multiplatform Support
 
-compose-nav-graph works on **Kotlin Multiplatform** out of the box: the annotations live in `commonMain` (published
+Compose Navigation Graph works on **Kotlin Multiplatform** out of the box: the annotations live in `commonMain` (published
 for `android`, `jvm`, `iosArm64`/`iosSimulatorArm64`/`iosX64`, `js`, and `wasmJs`), and the Gradle plugin detects your
 module shape and wires the right KSP pass automatically:
 
