@@ -21,6 +21,7 @@ nav:
     - 'NavGraph Graph': ide-plugin/graph.md
     - 'Preview Gallery': ide-plugin/preview-gallery.md
     - 'Settings': ide-plugin/settings.md
+  - 'Kotlin Multiplatform': kotlin-multiplatform.md
   - 'More Plugins': more-plugins.md
 
 # Repository

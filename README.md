@@ -253,6 +253,24 @@ navgraph {
 The full guide, including multi module baselines and CI integration, lives in the
 **[Nav Baseline documentation](https://skydoves.github.io/compose-nav-graph/gradle-plugin/baseline/)**.
 
+## Kotlin Multiplatform Support
+
+compose-nav-graph works on **Kotlin Multiplatform** out of the box: the annotations live in `commonMain` (published
+for `android`, `jvm`, `iosArm64`/`iosSimulatorArm64`/`iosX64`, `js`, and `wasmJs`), and the Gradle plugin detects your
+module shape and wires the right KSP pass automatically:
+
+- **KMP + Android**: the graph is extracted from the Android compilation, and every screen still gets a device free
+  thumbnail. A shared module has no Android resources of its own, so the renderer reuses the consuming Android app's
+  merged Compose Multiplatform resources automatically. Complex Compose Multiplatform screens that Layoutlib can't
+  draw fall back to the Robolectric backend (`renderBackend` defaults to `AUTO`).
+- **KMP without Android** (iOS/JS/wasm only): extraction runs on the common metadata pass and produces a structure
+  only graph: nodes, typed arguments, and transitions, without thumbnails.
+
+See it on a real app: [`samples/sample-kotlinconf/`](samples/sample-kotlinconf) applies the plugin to JetBrains'
+Compose Multiplatform **KotlinConf app** and renders its complete graph (26 screens, 36 transitions, every thumbnail
+included). The full guide lives in the
+**[Kotlin Multiplatform documentation](https://skydoves.github.io/compose-nav-graph/kotlin-multiplatform/)**.
+
 ## Documentation
 
 The full documentation covers the annotations, the `navgraph { }` DSL, the `.nav` baseline, the exports, and the IDE

@@ -16,7 +16,7 @@ plugins {
     alias(libs.plugins.hotswan.compiler)
     alias(libs.plugins.metro)
     id("com.google.devtools.ksp") version "2.3.9"
-    id("com.github.skydoves.navgraph") version "0.1.0-SNAPSHOT"
+    id("com.github.skydoves.navgraph") version "0.1.0"
 }
 
 kotlin {
