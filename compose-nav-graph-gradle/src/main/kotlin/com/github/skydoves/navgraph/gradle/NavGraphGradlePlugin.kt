@@ -1065,18 +1065,22 @@ public class NavGraphGradlePlugin : Plugin<Project> {
     }
   }
 
-  /** The first `com.android.application` project that declares a dependency on [module]. Checks the always-created
-   *  `implementation` configuration (variant runtime classpaths like `devDebugRuntimeClasspath` are registered
-   *  lazily, so iterating their names at `projectsEvaluated` is unreliable). */
+  /** The `com.android.application` whose linked resources feed the KMP render: [module] ITSELF when it carries the
+   *  application plugin (a single-module Compose-Multiplatform app — KMP + `com.android.application` on one module —
+   *  links its own R/.ap_, so it needs no external consumer), else the first application project that declares a
+   *  dependency on [module]. Checks the always-created `implementation` configuration (variant runtime classpaths
+   *  like `devDebugRuntimeClasspath` are registered lazily, so iterating their names at `projectsEvaluated` is
+   *  unreliable). */
   private fun findConsumingAndroidApp(module: Project): Project? =
-    module.rootProject.allprojects.firstOrNull { candidate ->
-      candidate.path != module.path &&
-        candidate.plugins.hasPlugin("com.android.application") &&
-        candidate.configurations.findByName("implementation")
-          ?.allDependencies?.any {
-            it is ProjectDependency && projectDependencyPath(it) == module.path
-          } == true
-    }
+    module.takeIf { it.plugins.hasPlugin("com.android.application") }
+      ?: module.rootProject.allprojects.firstOrNull { candidate ->
+        candidate.path != module.path &&
+          candidate.plugins.hasPlugin("com.android.application") &&
+          candidate.configurations.findByName("implementation")
+            ?.allDependencies?.any {
+              it is ProjectDependency && projectDependencyPath(it) == module.path
+            } == true
+      }
 
   /** The consuming app's debug variant — `debug`, or `<flavor>Debug` (e.g. `devDebug`) when flavored. Reads the
    *  first product flavor off the `android` extension reflectively (no AGP compile dependency); iterating the
