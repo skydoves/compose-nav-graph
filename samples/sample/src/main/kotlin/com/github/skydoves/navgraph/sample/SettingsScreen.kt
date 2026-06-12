@@ -61,6 +61,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -398,4 +399,20 @@ private val settingsSections: List<SettingsSection> = listOf(
 @Composable
 internal fun SettingsScreenPreview() {
   NavSampleTheme { SettingsScreen() }
+}
+
+// Renders with Korean resources (values-ko/) on both backends; see @Preview(locale) support.
+@NavPreview(route = Settings::class)
+@Preview(showBackground = true, locale = "ko")
+@Composable
+internal fun SettingsScreenKoreanPreview() {
+  NavSampleTheme {
+    Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
+      Text(
+        text = stringResource(R.string.settings_greeting),
+        style = MaterialTheme.typography.headlineMedium,
+        modifier = Modifier.padding(32.dp),
+      )
+    }
+  }
 }

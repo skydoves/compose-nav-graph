@@ -12,6 +12,6 @@ public final class com/github/skydoves/navgraph/testing/NavPreviewRenderer {
 }
 
 public final class com/github/skydoves/navgraph/testing/NavPreviewWrapperKt {
-	public static final fun NavPreviewWrapper (Lkotlin/jvm/functions/Function2;Landroidx/compose/runtime/Composer;I)V
+	public static final fun NavPreviewWrapper (Ljava/lang/String;Lkotlin/jvm/functions/Function2;Landroidx/compose/runtime/Composer;II)V
 }
 

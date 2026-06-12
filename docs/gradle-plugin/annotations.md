@@ -70,6 +70,12 @@ fun ProfileScreenPreview() {
 
 Set `primary = true` (default `false`) on the preview you want as the canonical thumbnail. When a route has several previews (light/dark, empty/loaded), exactly one of them should be `primary`.
 
+The thumbnail also honors the preview's **`@Preview(locale = …)`** qualifier, declared directly or through a
+multipreview meta-annotation (a custom `@DevicePreview` carrying `@Preview(locale = "ko")`, for example). Both
+render backends apply it, so a localized preview renders with the same string and drawable resources Android
+Studio's preview would show. When a function's `@Preview`s declare different locales, the first one wins (one
+function renders one thumbnail).
+
 !!! note "Why a separate preview function"
 
     The renderer reads `@NavPreview` via reflection on the discovered preview at render time, so it's `RUNTIME`-retained. You annotate the **preview** (not the screen) so the toolkit renders the screen exactly as you'd preview it in Android Studio, with its sample/fake state wired in. `@PreviewParameter` providers are honored.

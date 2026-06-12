@@ -135,6 +135,7 @@ internal class NavGraphProcessor(
               previewMethodFqn = jvmMethodFqn(fn),
               previewParameters = previewParametersOf(fn),
               primary = ann.boolArg("primary"),
+              locale = previewLocaleOf(fn),
             ),
           )
         }
@@ -324,6 +325,7 @@ internal class NavGraphProcessor(
             previewMethodFqn = method,
             previewParameters = previewParametersOf(fn),
             primary = false,
+            locale = previewLocaleOf(fn),
           )
         }
       // The slug is lossy (two packages/modules differing only by `_` vs `.`/`-`/`:` collapse to one), so append
@@ -372,6 +374,33 @@ internal class NavGraphProcessor(
       val metaDecl = meta.annotationType.resolve().declaration as? KSClassDeclaration
       metaDecl != null && isPreviewAnnotation(metaDecl, visited)
     }
+  }
+
+  /**
+   * The `@Preview(locale = …)` qualifier the function's preview declares, or null. Walks the function's
+   * annotations in declaration order — recursing into multipreview meta-annotations depth-first (same cycle
+   * guard as [isPreviewAnnotation]) — and returns the FIRST non-blank locale found. A function whose
+   * `@Preview`s disagree on locale renders one thumbnail, so one locale has to win, and declaration order is
+   * the deterministic choice (a meta-annotation listed before a direct `@Preview` wins).
+   */
+  private fun previewLocaleOf(fn: KSFunctionDeclaration): String? =
+    firstPreviewLocale(fn.annotations, mutableSetOf())
+
+  private fun firstPreviewLocale(
+    annotations: Sequence<KSAnnotation>,
+    visited: MutableSet<String>,
+  ): String? {
+    for (ann in annotations) {
+      val decl = ann.annotationType.resolve().declaration as? KSClassDeclaration ?: continue
+      val name = decl.qualifiedName?.asString() ?: continue
+      if (name == PREVIEW) {
+        ann.stringArg("locale")?.takeIf(String::isNotBlank)?.let { return it }
+        continue
+      }
+      if (!visited.add(name)) continue
+      firstPreviewLocale(decl.annotations, visited)?.let { return it }
+    }
+    return null
   }
 
   /**

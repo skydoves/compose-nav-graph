@@ -59,7 +59,7 @@ public object NavPreviewRenderer {
       val entry = current
       if (entry != null) {
         key(entry.methodFqn) {
-          NavPreviewWrapper {
+          NavPreviewWrapper(locale = entry.locale) {
             ComposableInvoker.invokeComposable(
               entry.methodFqn.substringBeforeLast('.'),
               entry.methodFqn.substringAfterLast('.'),
@@ -101,8 +101,9 @@ public object NavPreviewRenderer {
     }
   }
 
-  /** Read one render job's TSV (`methodFqn\tnodeId\tpreviewName\tprimary`, one preview per line) plus its output
-   *  thumbs dir + preview index from the given system properties; an absent/blank list or dir yields no entries
+  /** Read one render job's TSV (`methodFqn\tnodeId\tpreviewName\tprimary[\tlocale]`, one preview per line —
+   *  fields are trailing-additive; a 4-field line from an older plugin still parses) plus its output thumbs
+   *  dir + preview index from the given system properties; an absent/blank list or dir yields no entries
    *  (the job is skipped). */
   private fun readJob(listProp: String, thumbsProp: String, indexProp: String): List<RenderEntry> {
     val listPath = System.getProperty(listProp)?.takeIf { it.isNotBlank() } ?: return emptyList()
@@ -112,9 +113,9 @@ public object NavPreviewRenderer {
       ?: return emptyList()
     return File(listPath).takeIf { it.isFile }?.readLines().orEmpty().mapNotNull { line ->
       if (line.isBlank()) return@mapNotNull null
-      val parts = line.split("\t", limit = 4)
+      val parts = line.split("\t", limit = 5)
       if (parts.size < 4) return@mapNotNull null
-      RenderEntry(parts[0], parts[1], parts[2], parts[3], thumbs, index)
+      RenderEntry(parts[0], parts[1], parts[2], parts[3], parts.getOrNull(4), thumbs, index)
     }
   }
 
@@ -123,6 +124,7 @@ public object NavPreviewRenderer {
     val nodeId: String,
     val previewName: String,
     val primary: String,
+    val locale: String?,
     val thumbsDir: File,
     val previewIndex: File,
   )

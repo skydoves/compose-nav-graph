@@ -34,6 +34,20 @@ private val NAV_KEY_STUB = SourceFile.kotlin(
   """.trimIndent(),
 )
 
+/** Mirrors androidx's `@Preview` FQN + the params the processor reads — the real artifact isn't on the
+ *  test classpath, and KSP matches annotations by qualified name only. */
+internal val PREVIEW_STUB = SourceFile.kotlin(
+  "Preview.kt",
+  """
+  package androidx.compose.ui.tooling.preview
+  @Repeatable
+  annotation class Preview(
+    val name: String = "",
+    val locale: String = "",
+  )
+  """.trimIndent(),
+)
+
 private val DECODER = Json { ignoreUnknownKeys = true }
 
 internal fun compileNavGraph(

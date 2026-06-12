@@ -114,6 +114,7 @@ public abstract class LayoutlibRenderTask : DefaultTask() {
     val methodFqn: String,
     val id: String,
     val params: List<HPreviewParam>,
+    val locale: String?,
   )
 
   @TaskAction
@@ -135,7 +136,10 @@ public abstract class LayoutlibRenderTask : DefaultTask() {
             )
           } else {
             add(
-              Shot(node.id, pv.previewName, pv.primary, method, "nav${i++}", pv.previewParameters),
+              Shot(
+                node.id, pv.previewName, pv.primary, method, "nav${i++}",
+                pv.previewParameters, pv.locale,
+              ),
             )
           }
         }
@@ -205,6 +209,9 @@ public abstract class LayoutlibRenderTask : DefaultTask() {
             putJsonObject("previewParams") {
               put("apiLevel", apiLevel.get())
               put("device", PREVIEW_DEVICE)
+              // The @Preview(locale = …) qualifier, extracted by KSP (a multipreview's meta-annotation isn't
+              // visible to the renderer itself, so it must be passed explicitly).
+              s.locale?.let { put("locale", it) }
             }
             put("previewId", s.id)
           }
