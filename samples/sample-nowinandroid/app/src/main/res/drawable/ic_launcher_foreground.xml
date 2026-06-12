@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright 2022 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+  <path
+      android:pathData="M65.08,84.13a1.94,1.94 0,1 1,-0.01 -3.9,1.94 1.94,0 0,1 0.01,3.9ZM43.6,84.13a1.94,1.94 0,1 1,-0.01 -3.9,1.94 1.94,0 0,1 0.01,3.9ZM65.77,72.44 L69.66,65.73a0.81,0.81 0,0 0,-0.3 -1.1,0.82 0.82,0 0,0 -1.11,0.3l-3.93,6.8a24,24 0,0 0,-9.99 -2.14c-3.6,0 -6.98,0.77 -9.99,2.14l-3.93,-6.8a0.8,0.8 0,1 0,-1.4 0.8l3.88,6.71A22.91,22.91 0,0 0,31 90.77h46.67a22.9,22.9 0,0 0,-11.9 -18.33Z"
+      android:fillColor="@color/ic_launcher_foreground_tint"/>
+  <path
+      android:pathData="M46.57,35a0.85,0.85 0,0 0,-0.85 0.85v7.3h-1.53a1.52,1.52 0,0 0,0 3.05h1.53v-3.05h1.7c0.75,0 1.36,-0.61 1.36,-1.36v-4.07h1.19c0.46,0 0.84,-0.38 0.84,-0.85v-1.02a0.85,0.85 0,0 0,-0.84 -0.85h-3.4ZM46.57,54.35h3.4c0.46,0 0.84,-0.38 0.84,-0.85v-1.02a0.85,0.85 0,0 0,-0.84 -0.84h-1.19v-4.08c0,-0.75 -0.61,-1.36 -1.36,-1.36h-1.7v7.3c0,0.47 0.38,0.85 0.85,0.85ZM61.54,35c0.47,0 0.85,0.38 0.85,0.85v7.3h1.53a1.52,1.52 0,0 1,0 3.05h-1.53v-3.05h-1.7c-0.75,0 -1.36,-0.61 -1.36,-1.36v-4.07h-1.18a0.85,0.85 0,0 1,-0.85 -0.85v-1.02c0,-0.47 0.38,-0.85 0.85,-0.85h3.39ZM61.54,54.35h-3.39a0.85,0.85 0,0 1,-0.85 -0.85v-1.02c0,-0.46 0.38,-0.84 0.85,-0.84h1.18v-4.08c0,-0.75 0.61,-1.36 1.36,-1.36h1.7v7.3c0,0.47 -0.38,0.85 -0.85,0.85Z"
+      android:fillColor="@color/ic_launcher_foreground_tint"
+      android:fillType="evenOdd"/>
+</vector>

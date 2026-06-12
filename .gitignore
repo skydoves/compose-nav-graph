@@ -1,0 +1,56 @@
+# Built application files
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Java / Kotlin
+*.class
+.kotlin/
+
+# Generated files
+bin/
+gen/
+out/
+
+# Gradle
+.gradle/
+**/.gradle/
+build/
+**/build/
+.cxx/
+
+# Local configuration (SDK path, etc.)
+local.properties
+
+# Logs
+*.log
+
+# Android Studio captures
+captures/
+
+# IntelliJ
+*.iml
+.idea/
+.intellijPlatform/
+
+# macOS
+*.DS_Store
+**/.DS_Store
+
+# Keystores
+*.jks
+*.keystore
+
+# HotSwan cache
+.hotswan/
+
+# Generated navgraph graph exports
+nav-graph.html
+nav-graph.png
+
+# Internal development notes — not for distribution
+CLAUDE.md
+/tasks/
+/lessons/
+.claude/

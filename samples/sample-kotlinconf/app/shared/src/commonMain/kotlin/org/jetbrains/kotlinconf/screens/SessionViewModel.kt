@@ -1,0 +1,84 @@
+package org.jetbrains.kotlinconf.screens
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import org.jetbrains.kotlinconf.ConferenceService
+import org.jetbrains.kotlinconf.Score
+import org.jetbrains.kotlinconf.utils.toScore
+import org.jetbrains.kotlinconf.SessionCardView
+import org.jetbrains.kotlinconf.SessionId
+import org.jetbrains.kotlinconf.Speaker
+import org.jetbrains.kotlinconf.ui.components.Emotion
+import org.jetbrains.kotlinconf.utils.ErrorLoadingState
+
+@AssistedInject
+class SessionViewModel(
+    private val service: ConferenceService,
+    @Assisted private val sessionId: SessionId,
+) : ViewModel() {
+
+    private val _navigateToPrivacyNotice = MutableStateFlow(false)
+    val navigateToPrivacyNotice: StateFlow<Boolean> = _navigateToPrivacyNotice.asStateFlow()
+
+    val session: StateFlow<ErrorLoadingState<SessionCardView>> = service.sessionByIdFlow(sessionId)
+        .map { session ->
+            if (session != null) ErrorLoadingState.Content(session)
+            else ErrorLoadingState.Error
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ErrorLoadingState.Loading)
+
+    val speakers: StateFlow<List<Speaker>> = service.speakersBySessionId(sessionId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun toggleFavorite(isBookmarked: Boolean) {
+        viewModelScope.launch {
+            service.setFavorite(sessionId, isBookmarked)
+        }
+    }
+
+    fun submitFeedback(emotion: Emotion?) {
+        viewModelScope.launch {
+            if (service.isPolicySigned()) {
+                service.vote(sessionId, emotion?.toScore())
+            } else {
+                _navigateToPrivacyNotice.value = true
+            }
+        }
+    }
+
+    fun submitFeedbackWithComment(emotion: Emotion, comment: String) {
+        viewModelScope.launch {
+            if (service.isPolicySigned()) {
+                service.vote(sessionId, emotion.toScore())
+                service.sendFeedback(sessionId, comment)
+            } else {
+                _navigateToPrivacyNotice.value = true
+            }
+        }
+    }
+
+    fun onNavigatedToPrivacyNotice() {
+        _navigateToPrivacyNotice.value = false
+    }
+
+    @AssistedFactory
+    @ManualViewModelAssistedFactoryKey(Factory::class)
+    @ContributesIntoMap(AppScope::class)
+    fun interface Factory : ManualViewModelAssistedFactory {
+        fun create(sessionId: SessionId): SessionViewModel
+    }
+}

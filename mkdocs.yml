@@ -1,0 +1,64 @@
+site_name: Compose Navigation Graph
+site_description: 'A Compose navigation flow graph toolkit that statically extracts your nav graph (Navigation 3 first class; Navigation 2 routes and Activities via annotations), renders device free Layoutlib thumbnails, and visualizes the whole app flow in Android Studio or IntelliJ.'
+site_author: 'Jaewoong (skydoves)'
+site_url: 'https://skydoves.github.io/compose-nav-graph/'
+edit_uri: 'tree/main/docs/'
+remote_branch: gh-pages
+
+docs_dir: docs
+
+# Navigation
+nav:
+  - 'Overview': index.md
+  - 'Gradle Plugin':
+    - 'Getting Started': gradle-plugin/getting-started.md
+    - 'Annotations': gradle-plugin/annotations.md
+    - 'Configuration': gradle-plugin/configuration.md
+    - 'Nav Baseline': gradle-plugin/baseline.md
+    - 'Exporting': gradle-plugin/export.md
+  - 'IDE Plugin':
+    - 'Getting Started': ide-plugin/getting-started.md
+    - 'NavGraph Graph': ide-plugin/graph.md
+    - 'Preview Gallery': ide-plugin/preview-gallery.md
+    - 'Settings': ide-plugin/settings.md
+  - 'More Plugins': more-plugins.md
+
+# Repository
+repo_name: 'Compose Navigation Graph'
+repo_url: 'https://github.com/skydoves/compose-nav-graph'
+
+# Configuration
+theme:
+  name: 'material'
+  language: 'en'
+  logo: assets/icon.svg
+  favicon: assets/icon.svg
+
+  palette:
+    primary: 'deep purple'
+    accent: 'deep purple'
+    scheme: slate
+
+  font:
+    text: 'Roboto'
+    code: 'JetBrains Mono'
+
+  features:
+    - content.tabs.link
+    - content.code.copy
+    - content.code.annotate
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - attr_list
+  - codehilite:
+      guess_lang: false
+  - footnotes
+  - toc:
+      permalink: true
+  - pymdownx.betterem
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details

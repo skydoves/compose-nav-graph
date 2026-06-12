@@ -1,0 +1,15 @@
+package org.jetbrains.kotlinconf.backend
+
+import io.ktor.server.application.Application
+import org.jetbrains.kotlinconf.backend.services.ArchivedDataService
+import org.jetbrains.kotlinconf.backend.services.AssetService
+import org.jetbrains.kotlinconf.backend.services.ConferenceInfoService
+import org.jetbrains.kotlinconf.backend.services.GoldenKodeeService
+import org.koin.ktor.ext.get as koinGet
+
+fun Application.startupModule() {
+    koinGet<ArchivedDataService>().validateArchives()
+    koinGet<ConferenceInfoService>().validateConferenceInfo()
+    koinGet<GoldenKodeeService>().validateGoldenKodeeData()
+    koinGet<AssetService>().validateDocuments()
+}

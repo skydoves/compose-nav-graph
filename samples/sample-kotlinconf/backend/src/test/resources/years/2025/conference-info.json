@@ -1,0 +1,39 @@
+{
+  "aboutHeader": "KotlinConf 2025",
+  "aboutDescription": "Test conference description for 2025",
+  "partners": [],
+  "days": [],
+  "aboutBlocks": [],
+  "tags": {
+    "categories": [],
+    "levels": [],
+    "formats": []
+  },
+  "mapData": {
+    "venueAddress": "Test Venue 2025",
+    "floors": [
+      {
+        "name": "Ground floor",
+        "shortName": "GF",
+        "svgPathLight": "maps/ground-floor.svg",
+        "svgPathDark": "maps/ground-floor-dark.svg"
+      },
+      {
+        "name": "First floor",
+        "shortName": "1F",
+        "svgPathLight": "maps/first-floor.svg",
+        "svgPathDark": "maps/first-floor-dark.svg"
+      }
+    ],
+    "rooms": {
+      "Room A": { "floorIndex": 0, "offsetX": 0.5, "offsetY": 0.5 },
+      "Room B": { "floorIndex": 1, "offsetX": 0.3, "offsetY": 0.7 }
+    },
+    "defaultFloorIndex": 0,
+    "defaultOffsetX": 0.4,
+    "defaultOffsetY": 0.6,
+    "initialZoom": 2.0,
+    "minZoom": 0.5,
+    "maxZoom": 6.0
+  }
+}

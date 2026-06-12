@@ -1,0 +1,254 @@
+package org.jetbrains.kotlinconf.screens
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
+import dev.zacsweers.metrox.viewmodel.metroViewModel
+import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.kotlinconf.ScreenWithTitle
+import org.jetbrains.kotlinconf.ScrollToTopHandler
+import org.jetbrains.kotlinconf.Speaker
+import org.jetbrains.kotlinconf.SpeakerId
+import org.jetbrains.kotlinconf.generated.resources.Res
+import org.jetbrains.kotlinconf.generated.resources.about_conference_general_terms_link
+import org.jetbrains.kotlinconf.generated.resources.about_conference_privacy_notice_link
+import org.jetbrains.kotlinconf.generated.resources.about_conference_title
+import org.jetbrains.kotlinconf.generated.resources.about_conference_website_link
+import org.jetbrains.kotlinconf.generated.resources.arrow_up_right_24
+import org.jetbrains.kotlinconf.generated.resources.kotlinconf_by_jetbrains_description
+import org.jetbrains.kotlinconf.ui.components.DayHeader
+import org.jetbrains.kotlinconf.ui.components.HorizontalDivider
+import org.jetbrains.kotlinconf.ui.components.PageMenuItem
+import org.jetbrains.kotlinconf.ui.components.SpeakerCard
+import org.jetbrains.kotlinconf.ui.components.Text
+import org.jetbrains.kotlinconf.ui.theme.KotlinConfTheme
+import androidx.compose.ui.tooling.preview.Preview
+import com.github.skydoves.navgraph.annotations.NavDestination
+import com.github.skydoves.navgraph.annotations.NavEdge
+import com.github.skydoves.navgraph.annotations.NavPreview
+
+@NavDestination(route = org.jetbrains.kotlinconf.navigation.AboutConferenceScreen::class)
+@NavEdge(to = org.jetbrains.kotlinconf.navigation.VisitorPrivacyNoticeScreen::class, label = "Privacy notice")
+@NavEdge(to = org.jetbrains.kotlinconf.navigation.TermsOfUseScreen::class, label = "General terms")
+@NavEdge(to = org.jetbrains.kotlinconf.navigation.SpeakerDetailScreen::class, label = "View speaker")
+@Composable
+fun AboutConference(
+    onPrivacyNotice: () -> Unit,
+    onGeneralTerms: () -> Unit,
+    onWebsiteLink: () -> Unit,
+    onBack: () -> Unit,
+    onSpeaker: (SpeakerId) -> Unit,
+    viewModel: AboutConferenceViewModel = metroViewModel(),
+) {
+    val isDark = KotlinConfTheme.colors.isDark
+    val conferenceInfo = viewModel.conferenceInfo.collectAsStateWithLifecycle().value
+    val logoUrl = when {
+        isDark -> conferenceInfo?.images?.kotlinConfDark
+        else -> conferenceInfo?.images?.kotlinConfLight
+    }
+    val scrollState = rememberScrollState()
+    ScrollToTopHandler(scrollState)
+    ScreenWithTitle(
+        title = stringResource(Res.string.about_conference_title),
+        onBack = onBack,
+        contentScrollState = scrollState,
+    ) {
+        if (conferenceInfo != null) {
+            Column(
+                modifier = Modifier.padding(vertical = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
+            ) {
+                Text(
+                    text = conferenceInfo.aboutHeader,
+                    style = KotlinConfTheme.typography.h1,
+                    modifier = Modifier.semantics { heading() }
+                )
+                Text(text = conferenceInfo.aboutDescription)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(48.dp),
+        ) {
+            val events by viewModel.events.collectAsStateWithLifecycle()
+            for (event in events) {
+                EventCard(
+                    month = event.month,
+                    day = event.day,
+                    line1 = event.title1,
+                    line2 = event.title2,
+                    description = event.description ?: "",
+                    speakers = event.speakers ?: emptyList(),
+                    location = event.sessionCard?.locationLine ?: "",
+                    time = event.sessionCard?.shortTimeline ?: "",
+                    onSpeaker = onSpeaker,
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(64.dp))
+
+        if (logoUrl != null) {
+            AsyncImage(
+                model = logoUrl,
+                contentDescription = stringResource(Res.string.kotlinconf_by_jetbrains_description),
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+                    .widthIn(max = 360.dp)
+            )
+            Spacer(modifier = Modifier.height(64.dp))
+        }
+
+        Column(
+            modifier = Modifier.padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            PageMenuItem(
+                label = stringResource(Res.string.about_conference_privacy_notice_link),
+                onClick = onPrivacyNotice,
+            )
+            PageMenuItem(
+                label = stringResource(Res.string.about_conference_general_terms_link),
+                onClick = onGeneralTerms,
+            )
+            PageMenuItem(
+                label = stringResource(Res.string.about_conference_website_link),
+                drawableEnd = Res.drawable.arrow_up_right_24,
+                onClick = onWebsiteLink,
+            )
+        }
+    }
+}
+
+@Composable
+private fun EventCard(
+    month: String,
+    day: String,
+    line1: String,
+    line2: String,
+    description: String,
+    speakers: List<Speaker>,
+    location: String,
+    time: String,
+    day2: String = "",
+    onSpeaker: (SpeakerId) -> Unit,
+    backgroundColor: Color = KotlinConfTheme.colors.mainBackground,
+) {
+    Column(
+        modifier = Modifier
+            .background(backgroundColor)
+            .border(
+                width = 1.dp,
+                color = KotlinConfTheme.colors.strokePale,
+                shape = KotlinConfTheme.shapes.roundedCornerMd,
+            )
+            .clip(KotlinConfTheme.shapes.roundedCornerMd),
+    ) {
+        DayHeader(
+            month = month,
+            day = day,
+            line1 = line1,
+            line2 = line2,
+            modifier = Modifier.fillMaxWidth(),
+            day2 = day2,
+            fullWidth = true
+        )
+
+        if (description.isNotEmpty()) {
+            Text(description, modifier = Modifier.padding(horizontal = 12.dp, vertical = 16.dp))
+        }
+
+        if (speakers.isNotEmpty()) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                for (speaker in speakers) {
+                    SpeakerCard(
+                        name = speaker.name,
+                        title = speaker.position,
+                        photoUrl = speaker.photoUrl,
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { onSpeaker(speaker.id) },
+                    )
+                }
+            }
+        }
+
+        if (location.isNotEmpty() || time.isNotEmpty()) {
+            HorizontalDivider(1.dp, KotlinConfTheme.colors.strokePale)
+
+            Row(
+                modifier = Modifier.padding(16.dp).fillMaxSize(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(location, style = KotlinConfTheme.typography.text2)
+                Text(time, style = KotlinConfTheme.typography.text2)
+            }
+        }
+    }
+}
+
+@NavPreview(route = org.jetbrains.kotlinconf.navigation.AboutConferenceScreen::class, primary = true)
+@Preview(widthDp = 360)
+@Composable
+private fun AboutConferenceScreenNavPreview() {
+    KotlinConfTheme {
+        Column(
+            modifier = Modifier
+                .background(KotlinConfTheme.colors.mainBackground)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
+            Text(
+                text = "About the conference",
+                style = KotlinConfTheme.typography.h1,
+            )
+            Text(
+                text = "KotlinConf is the official Kotlin conference organized by JetBrains, " +
+                    "bringing together the global Kotlin community for two days of talks, " +
+                    "workshops, and networking.",
+            )
+            EventCard(
+                month = "MAY",
+                day = "22",
+                line1 = "KotlinConf 2025",
+                line2 = "Copenhagen, Denmark",
+                description = "Two days of deep technical content from the people who build Kotlin.",
+                speakers = listOf(
+                    Speaker(
+                        id = SpeakerId("1"),
+                        name = "Roman Elizarov",
+                        position = "Kotlin Project Lead, JetBrains",
+                        description = "",
+                        photoUrl = "",
+                    ),
+                ),
+                location = "Bella Center",
+                time = "09:00 - 18:00",
+                onSpeaker = {},
+            )
+        }
+    }
+}

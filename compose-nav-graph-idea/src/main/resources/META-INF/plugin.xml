@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Designed and developed by 2026 skydoves (Jaewoong Eum)
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<idea-plugin>
+  <id>com.github.skydoves.navgraph.idea</id>
+  <name>Compose Navigation Graph</name>
+  <vendor email="skydoves2@gmail.com" url="https://github.com/skydoves">skydoves</vendor>
+
+  <description><![CDATA[
+    Visualizes your <b>Jetpack Compose</b> navigation graph as an interactive flow map in a tool window:
+    <b>Navigation 3</b> destinations are picked up automatically, and anything else wires in through the same
+    annotations, from <b>Navigation 2</b> routes to plain <b>Activities</b>.
+    Each node shows its rendered <code>@Preview</code> thumbnail and typed arguments; edges show
+    navigation transitions; clicking a node jumps to the screen's top-level composable.
+    <br/>
+    Run <code>./gradlew :app:generateNavGraph</code> (the <code>compose-nav-graph-gradle</code> plugin) to produce the
+    graph, then open the <b>NavGraph Graph</b> tool window.
+  ]]></description>
+
+  <depends>com.intellij.modules.platform</depends>
+  <depends>com.intellij.java</depends>
+  <!-- Optional: only "click a node → jump to the composable" needs the Kotlin plugin. Keeping it optional lets
+       the tool window load in any IDE regardless of the Kotlin plugin's build-locked version. -->
+  <depends optional="true" config-file="navgraph-kotlin.xml">org.jetbrains.kotlin</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <!-- Balloon notifications for the NavGraph Graph refresh. -->
+    <notificationGroup id="NavGraph Graph" displayType="BALLOON"/>
+
+    <toolWindow
+        id="NavGraph Graph"
+        anchor="right"
+        factoryClass="com.github.skydoves.navgraph.idea.NavGraphToolWindowFactory"
+        icon="/icons/navgraph.svg"/>
+
+    <!-- Per-project settings (stored in the workspace file) for the NavGraph Graph appearance and behavior. -->
+    <projectService
+        serviceImplementation="com.github.skydoves.navgraph.idea.settings.NavGraphSettings"/>
+
+    <projectConfigurable
+        parentId="tools"
+        instance="com.github.skydoves.navgraph.idea.settings.NavGraphSettingsConfigurable"
+        id="com.github.skydoves.navgraph.idea.settings.NavGraphSettingsConfigurable"
+        displayName="NavGraph Graph"
+        nonDefaultProject="true"/>
+  </extensions>
+
+  <actions>
+    <action
+        id="com.github.skydoves.navgraph.idea.GitHubAction"
+        class="com.github.skydoves.navgraph.idea.GitHubAction"
+        text="GitHub"
+        description="Open Compose Navigation Graph on GitHub"/>
+  </actions>
+</idea-plugin>

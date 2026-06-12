@@ -1,0 +1,258 @@
+public abstract interface annotation class com/github/skydoves/navgraph/annotations/NavDestination : java/lang/annotation/Annotation {
+	public abstract fun route ()Ljava/lang/Class;
+}
+
+public abstract interface annotation class com/github/skydoves/navgraph/annotations/NavEdge : java/lang/annotation/Annotation {
+	public abstract fun from ()Ljava/lang/Class;
+	public abstract fun label ()Ljava/lang/String;
+	public abstract fun to ()Ljava/lang/Class;
+}
+
+public abstract interface annotation class com/github/skydoves/navgraph/annotations/NavEdge$Container : java/lang/annotation/Annotation {
+	public abstract fun value ()[Lcom/github/skydoves/navgraph/annotations/NavEdge;
+}
+
+public abstract interface annotation class com/github/skydoves/navgraph/annotations/NavGraphRoot : java/lang/annotation/Annotation {
+	public abstract fun route ()Ljava/lang/Class;
+}
+
+public abstract interface annotation class com/github/skydoves/navgraph/annotations/NavPreview : java/lang/annotation/Annotation {
+	public abstract fun primary ()Z
+	public abstract fun route ()Ljava/lang/Class;
+}
+
+public final class com/github/skydoves/navgraph/model/EdgeConfidence : java/lang/Enum {
+	public static final field ANNOTATED Lcom/github/skydoves/navgraph/model/EdgeConfidence;
+	public static final field Companion Lcom/github/skydoves/navgraph/model/EdgeConfidence$Companion;
+	public static final field INFERRED Lcom/github/skydoves/navgraph/model/EdgeConfidence;
+	public static final field RUNTIME Lcom/github/skydoves/navgraph/model/EdgeConfidence;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/github/skydoves/navgraph/model/EdgeConfidence;
+	public static fun values ()[Lcom/github/skydoves/navgraph/model/EdgeConfidence;
+}
+
+public final class com/github/skydoves/navgraph/model/EdgeConfidence$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/github/skydoves/navgraph/model/NavArg {
+	public static final field Companion Lcom/github/skydoves/navgraph/model/NavArg$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ZZZ)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ZZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Z
+	public final fun component5 ()Z
+	public final fun component6 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ZZZ)Lcom/github/skydoves/navgraph/model/NavArg;
+	public static synthetic fun copy$default (Lcom/github/skydoves/navgraph/model/NavArg;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ZZZILjava/lang/Object;)Lcom/github/skydoves/navgraph/model/NavArg;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEnum ()Z
+	public final fun getName ()Ljava/lang/String;
+	public final fun getNullable ()Z
+	public final fun getOptional ()Z
+	public final fun getType ()Ljava/lang/String;
+	public final fun getTypeArguments ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class com/github/skydoves/navgraph/model/NavArg$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lcom/github/skydoves/navgraph/model/NavArg$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/github/skydoves/navgraph/model/NavArg;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/github/skydoves/navgraph/model/NavArg;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/github/skydoves/navgraph/model/NavArg$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/github/skydoves/navgraph/model/NavGraph {
+	public static final field Companion Lcom/github/skydoves/navgraph/model/NavGraph$Companion;
+	public static final field SCHEMA_VERSION I
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;ILjava/util/List;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/String;ILjava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()I
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;ILjava/util/List;Ljava/util/List;)Lcom/github/skydoves/navgraph/model/NavGraph;
+	public static synthetic fun copy$default (Lcom/github/skydoves/navgraph/model/NavGraph;Ljava/lang/String;ILjava/util/List;Ljava/util/List;ILjava/lang/Object;)Lcom/github/skydoves/navgraph/model/NavGraph;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEdges ()Ljava/util/List;
+	public final fun getNavVersion ()Ljava/lang/String;
+	public final fun getNodes ()Ljava/util/List;
+	public final fun getSchemaVersion ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class com/github/skydoves/navgraph/model/NavGraph$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lcom/github/skydoves/navgraph/model/NavGraph$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/github/skydoves/navgraph/model/NavGraph;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/github/skydoves/navgraph/model/NavGraph;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/github/skydoves/navgraph/model/NavGraph$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/github/skydoves/navgraph/model/NavGraphEdge {
+	public static final field Companion Lcom/github/skydoves/navgraph/model/NavGraphEdge$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Lcom/github/skydoves/navgraph/model/EdgeConfidence;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Lcom/github/skydoves/navgraph/model/EdgeConfidence;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Lcom/github/skydoves/navgraph/model/EdgeConfidence;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Lcom/github/skydoves/navgraph/model/EdgeConfidence;)Lcom/github/skydoves/navgraph/model/NavGraphEdge;
+	public static synthetic fun copy$default (Lcom/github/skydoves/navgraph/model/NavGraphEdge;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Lcom/github/skydoves/navgraph/model/EdgeConfidence;ILjava/lang/Object;)Lcom/github/skydoves/navgraph/model/NavGraphEdge;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getArgs ()Ljava/util/List;
+	public final fun getConfidence ()Lcom/github/skydoves/navgraph/model/EdgeConfidence;
+	public final fun getFrom ()Ljava/lang/String;
+	public final fun getLabel ()Ljava/lang/String;
+	public final fun getTo ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class com/github/skydoves/navgraph/model/NavGraphEdge$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lcom/github/skydoves/navgraph/model/NavGraphEdge$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/github/skydoves/navgraph/model/NavGraphEdge;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/github/skydoves/navgraph/model/NavGraphEdge;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/github/skydoves/navgraph/model/NavGraphEdge$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/github/skydoves/navgraph/model/NavNode {
+	public static final field Companion Lcom/github/skydoves/navgraph/model/NavNode$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/util/List;Ljava/util/List;Z)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/util/List;Ljava/util/List;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/Integer;
+	public final fun component7 ()Ljava/util/List;
+	public final fun component8 ()Ljava/util/List;
+	public final fun component9 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/util/List;Ljava/util/List;Z)Lcom/github/skydoves/navgraph/model/NavNode;
+	public static synthetic fun copy$default (Lcom/github/skydoves/navgraph/model/NavNode;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/util/List;Ljava/util/List;ZILjava/lang/Object;)Lcom/github/skydoves/navgraph/model/NavNode;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getArgs ()Ljava/util/List;
+	public final fun getClickTargetFqn ()Ljava/lang/String;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getModule ()Ljava/lang/String;
+	public final fun getPreviews ()Ljava/util/List;
+	public final fun getRoute ()Ljava/lang/String;
+	public final fun getSourceFile ()Ljava/lang/String;
+	public final fun getSourceLine ()Ljava/lang/Integer;
+	public final fun getStart ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class com/github/skydoves/navgraph/model/NavNode$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lcom/github/skydoves/navgraph/model/NavNode$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/github/skydoves/navgraph/model/NavNode;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/github/skydoves/navgraph/model/NavNode;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/github/skydoves/navgraph/model/NavNode$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/github/skydoves/navgraph/model/NavPreviewParam {
+	public static final field Companion Lcom/github/skydoves/navgraph/model/NavPreviewParam$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lcom/github/skydoves/navgraph/model/NavPreviewParam;
+	public static synthetic fun copy$default (Lcom/github/skydoves/navgraph/model/NavPreviewParam;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/github/skydoves/navgraph/model/NavPreviewParam;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getName ()Ljava/lang/String;
+	public final fun getProvider ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class com/github/skydoves/navgraph/model/NavPreviewParam$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lcom/github/skydoves/navgraph/model/NavPreviewParam$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/github/skydoves/navgraph/model/NavPreviewParam;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/github/skydoves/navgraph/model/NavPreviewParam;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/github/skydoves/navgraph/model/NavPreviewParam$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/github/skydoves/navgraph/model/NavPreviewRef {
+	public static final field Companion Lcom/github/skydoves/navgraph/model/NavPreviewRef$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Z)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Z)Lcom/github/skydoves/navgraph/model/NavPreviewRef;
+	public static synthetic fun copy$default (Lcom/github/skydoves/navgraph/model/NavPreviewRef;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;ZILjava/lang/Object;)Lcom/github/skydoves/navgraph/model/NavPreviewRef;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getPreviewFqn ()Ljava/lang/String;
+	public final fun getPreviewMethodFqn ()Ljava/lang/String;
+	public final fun getPreviewName ()Ljava/lang/String;
+	public final fun getPreviewParameters ()Ljava/util/List;
+	public final fun getPrimary ()Z
+	public final fun getThumbnail ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class com/github/skydoves/navgraph/model/NavPreviewRef$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lcom/github/skydoves/navgraph/model/NavPreviewRef$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lcom/github/skydoves/navgraph/model/NavPreviewRef;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lcom/github/skydoves/navgraph/model/NavPreviewRef;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class com/github/skydoves/navgraph/model/NavPreviewRef$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+

@@ -1,0 +1,60 @@
+[versions]
+kotlin = "2.3.21"
+agp = "9.1.1"
+ksp = "2.3.9"
+kotlinxSerialization = "1.11.0"
+vanniktechPublish = "0.36.0"
+spotless = "8.6.0"
+kotlinBinaryCompatibility = "0.18.1"
+
+navigation3 = "1.1.2"
+navigation3Kmp = "1.1.0-alpha04"
+composeBom = "2026.05.01"
+composeMultiplatform = "1.11.0"
+androidxActivityCompose = "1.13.0"
+
+junit4 = "4.13.2"
+
+robolectric = "4.15.1"
+
+kotlinIdea = "2.3.0"
+intellijPlatform = "2.10.1"
+intellijIdea = "2025.2"
+
+[libraries]
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+ksp-symbol-processing-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
+
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidxActivityCompose" }
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui" }
+androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
+androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
+androidx-navigation3-runtime-kmp = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3Kmp" }
+androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
+
+junit4 = { module = "junit:junit", version.ref = "junit4" }
+
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-jvm-idea = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlinIdea" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+jetbrains-compose = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+vanniktech-publish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktechPublish" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+kotlin-binary-compatibility = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "kotlinBinaryCompatibility" }
+intellij-platform = { id = "org.jetbrains.intellij.platform", version.ref = "intellijPlatform" }
