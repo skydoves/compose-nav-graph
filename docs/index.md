@@ -6,6 +6,10 @@ It follows the same "make the invisible visible" idea as [Compose Stability Anal
 
 ![NavGraph Graph tool window](assets/plugin-nav-graph.png)
 
+!!! tip "New here? Start with the walkthrough"
+
+    For a guided tour of the whole toolkit, read **[Compose Navigation Graph: Visualize Your Entire App Flow in Android Studio](https://doveletter.dev/articles/compose-nav-graph-plugin)** on Dove Letter.
+
 !!! tip "Set everything up in one shot with AI"
 
     Throw **[plugin-agent-guides.md](https://github.com/skydoves/compose-nav-graph/blob/main/plugin-agent-guides.md)** at your LLM (Claude Code, Cursor, Gemini CLI, ...) as-is, and it will apply the Gradle plugin, annotate your screens, and generate your first graph for you.
