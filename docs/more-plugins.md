@@ -24,4 +24,5 @@ same Gradle-plus-IDE architecture this toolkit uses:
 ## Dove Letter
 
 **[Dove Letter](https://doveletter.dev/)** is a daily subscription where you can learn, discuss, and share new
-knowledge about Android, Kotlin, Jetpack Compose, and careers as a developer.
+knowledge about Android, Kotlin, Jetpack Compose, and careers as a developer. It also hosts the introductory walkthrough
+for this plugin: **[Compose Navigation Graph: Visualize Your Entire App Flow in Android Studio](https://doveletter.dev/articles/compose-nav-graph-plugin)**.

@@ -40,6 +40,10 @@ The sponsors listed below made it possible for this project to be released as op
 
 **[CodeRabbit](https://coderabbit.link/Jaewoong)** is an AI-powered code review platform that integrates directly into pull-request workflows and IDEs, examining code changes in context and suggesting improvements.
 
+## 📖 Article
+
+For a guided tour of the whole toolkit, read the walkthrough article **[Compose Navigation Graph: Visualize Your Entire App Flow in Android Studio](https://doveletter.dev/articles/compose-nav-graph-plugin)**, which goes from annotating your first screen to validating navigation in pull requests.
+
 ## Compose Navigation Graph Plugin
 
 The Compose Navigation Graph IntelliJ plugin brings your app's **whole navigation flow** directly into Android Studio
