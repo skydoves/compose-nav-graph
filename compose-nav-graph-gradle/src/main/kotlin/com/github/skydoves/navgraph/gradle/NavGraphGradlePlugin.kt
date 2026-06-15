@@ -182,6 +182,30 @@ public class NavGraphGradlePlugin : Plugin<Project> {
         }
       }
 
+      // Layoutlib renders `@NavPreview` through `androidx.compose.ui.tooling.ComposeViewAdapter`, in Compose
+      // `ui-tooling`. For KMP+Android the render classpath is the androidMain runtime — `androidRuntimeClasspath`
+      // (new `androidLibrary {}`) / `debugRuntimeClasspath` (legacy `androidTarget()`), see registerLayoutlibRender —
+      // and ui-tooling isn't on it by default, so the renderer emits a "…ComposeViewAdapter" placeholder for every
+      // preview (issue #10). (Plain Android already gets ui-tooling on its variant runtime via the conventional
+      // debugImplementation, so only KMP needs this.) Add the consumer's OWN ui-tooling notation — the exact string
+      // they'd write as `compose.uiTooling`, so version+flavor match their screens (no NoSuchMethodError), honoring
+      // the no-pin rule above. CMP plugin → read it reflectively; else derive from a declared `androidx.compose.ui:ui`.
+      val layoutlib = ext.renderBackend.get() != RenderBackend.ROBOLECTRIC
+      if (kmp && android && layoutlib && ext.renderThumbnails.get()) {
+        val runtimeCfg = listOf("androidRuntimeClasspath", "debugRuntimeClasspath")
+          .firstOrNull { configurations.findByName(it) != null }
+        if (runtimeCfg != null && !uiToolingAlreadyDeclared()) {
+          val notation = composeUiToolingNotation()
+            ?: androidxComposeUiVersion()?.let { "androidx.compose.ui:ui-tooling:$it" }
+          if (notation != null) {
+            dependencies.add(runtimeCfg, notation)
+            logger.info(
+              "navgraph: added '$notation' to '$runtimeCfg' so Layoutlib can render KMP previews.",
+            )
+          }
+        }
+      }
+
       if (!pluginManager.hasPlugin("com.google.devtools.ksp")) {
         logger.error(
           "navgraph: the KSP plugin 'com.google.devtools.ksp' is not applied, so navgraph can't " +
@@ -301,6 +325,53 @@ public class NavGraphGradlePlugin : Plugin<Project> {
       }
     }.getOrNull()
   }
+
+  /** The consumer's own Compose `ui-tooling` dependency notation (`org.jetbrains.compose.ui:ui-tooling:<their CMP
+   *  version>`) — the exact string they'd write as `compose.uiTooling` — read off the `org.jetbrains.compose`
+   *  plugin's `compose` extension reflectively (no Compose-Gradle-plugin compile dependency). Because it carries the
+   *  consumer's own version + flavor, adding it to the render classpath can't skew the Compose API (NoSuchMethodError).
+   *  Null when the JetBrains Compose plugin isn't applied (androidx-Compose consumers use [androidxComposeUiVersion]). */
+  private fun Project.composeUiToolingNotation(): String? {
+    if (!plugins.hasPlugin("org.jetbrains.compose")) return null
+    val compose = extensions.findByName("compose") ?: return null
+    fun Any.uiTooling(): String? =
+      runCatching { javaClass.getMethod("getUiTooling").invoke(this) as? String }.getOrNull()
+    // `compose.uiTooling` is sugar for either ComposeExtension.getUiTooling() or its getDependencies().getUiTooling().
+    return (
+      compose.uiTooling()
+        ?: runCatching {
+          compose.javaClass.getMethod("getDependencies").invoke(compose)
+        }.getOrNull()
+          ?.uiTooling()
+      )?.takeIf(String::isNotBlank)
+  }
+
+  /** The version of an already-DECLARED `androidx.compose.ui:ui`, scanned from the common declarable configs (never
+   *  the runtime classpath we add to, so nothing is resolved). The androidx-Compose fallback for
+   *  [composeUiToolingNotation]. Null when absent or version-less (e.g. pinned only by a BOM). */
+  private fun Project.androidxComposeUiVersion(): String? =
+    sequenceOf("commonMainImplementation", "androidMainImplementation", "implementation")
+      .mapNotNull { configurations.findByName(it) }
+      .flatMap { it.dependencies.asSequence() }
+      .firstOrNull { it.group == "androidx.compose.ui" && it.name == "ui" }
+      ?.version?.takeIf(String::isNotBlank)
+
+  /** Whether Compose `ui-tooling` (either flavor) is already DECLARED on the render/impl configs — checked against
+   *  declared dependencies only (no resolution), so we never add a duplicate/conflicting coordinate when the consumer
+   *  already wired it by hand. */
+  private fun Project.uiToolingAlreadyDeclared(): Boolean = sequenceOf(
+    "androidRuntimeClasspath",
+    "debugRuntimeClasspath",
+    "commonMainImplementation",
+    "androidMainImplementation",
+    "implementation",
+  )
+    .mapNotNull { configurations.findByName(it) }
+    .flatMap { it.dependencies.asSequence() }
+    .any {
+      (it.group == "org.jetbrains.compose.ui" || it.group == "androidx.compose.ui") &&
+        it.name == "ui-tooling"
+    }
 
   /** Registers the pipeline tasks for the detected variant (Android Layoutlib render vs KMP structure-only). */
   private fun wire(
@@ -851,6 +922,7 @@ public class NavGraphGradlePlugin : Plugin<Project> {
         workDir.set(scratchDir)
         this.thumbsDir.set(thumbsOut)
         previewIndex.set(indexOut)
+        kmpModule.set(kmp)
         dependsOn(kspTaskName, setup.prepare)
 
         if (kmp) {

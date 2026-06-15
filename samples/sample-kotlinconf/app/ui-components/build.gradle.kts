@@ -86,8 +86,3 @@ compose.resources {
     nameOfResClass = "UiRes"
     packageOfResClass = "org.jetbrains.kotlinconf.ui.generated.resources"
 }
-
-// Android-based preview support
-dependencies {
-    androidRuntimeClasspath(libs.compose.ui.tooling)
-}

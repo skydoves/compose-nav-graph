@@ -193,6 +193,27 @@ If a build reports `SDK location not found`, create `local.properties` with `sdk
 Android SDK on this machine (for example `sdk.dir=/Users/<you>/Library/Android/sdk`). The file is
 gitignored.
 
+### 4.7 Kotlin Multiplatform: device free rendering needs Compose ui-tooling
+
+Layoutlib renders a `@Preview` through `androidx.compose.ui.tooling.ComposeViewAdapter`, which ships in Compose
+`ui-tooling`. On a KMP module the device free render runs against the Android target's runtime classpath
+(`androidRuntimeClasspath`), and `ui-tooling` is not on it by default — without it the renderer produces a
+placeholder for every preview. The plugin auto-adds it for you when the JetBrains Compose plugin
+(`org.jetbrains.compose`) is applied — the usual Compose Multiplatform case — so you do nothing. Add it by hand only
+when auto-wiring cannot apply: you set `navgraph { autoDependencies.set(false) }`, or the module uses AndroidX
+Compose directly with no `org.jetbrains.compose` plugin.
+
+```kotlin
+dependencies {
+  androidRuntimeClasspath(compose.uiTooling) // Compose Multiplatform
+  // androidx Compose instead: androidRuntimeClasspath("androidx.compose.ui:ui-tooling:<your compose version>")
+}
+```
+
+If KMP previews come back as placeholders and the build log says `ComposeViewAdapter` is missing from the render
+classpath, this is the fix. A plain `debugImplementation(...ui-tooling)` is not enough on KMP: the render reads the
+Android target's runtime classpath, not a debug runtime.
+
 ---
 
 ## 5. Choose destinations and edges
@@ -358,6 +379,7 @@ Multiplatform modules are excluded from aggregation automatically and always use
 | `@Composable` or `@Preview` does not resolve | the module is not set up for Compose | apply the Compose compiler plugin and add material3 plus the Compose preview tooling |
 | KSP task missing, or an empty `nav-graph.json` | the KSP plugin is not applied, or its version does not match Kotlin | apply `com.google.devtools.ksp` at the version that matches your Kotlin version |
 | thumbnails are blank and all the same size | a preview crashed because it was not DI free, or a runtime class was missing | make every preview DI free; for a Compose Multiplatform app set ROBOLECTRIC |
+| KMP previews are all an identical "ComposeViewAdapter" placeholder | Compose `ui-tooling` is not on the KMP Android render classpath | auto-added for `org.jetbrains.compose` projects; otherwise add `androidRuntimeClasspath(compose.uiTooling)` (see 4.7) |
 | the plugin cannot be resolved | `mavenCentral()` is missing from the plugin repositories | add it to `pluginManagement { repositories }` |
 | Compose Multiplatform screens never render under Layoutlib | Layoutlib cannot draw those screens | set the backend to ROBOLECTRIC |
 | a minSdk merge conflict from a transitive library | a dependency wants a higher minSdk than the consumer | add `tools:overrideLibrary` to the unit test or debug manifest |

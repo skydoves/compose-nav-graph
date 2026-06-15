@@ -146,11 +146,6 @@ kotlin {
     jvmToolchain(21)
 }
 
-// Android-based preview support
-dependencies {
-    androidRuntimeClasspath(libs.compose.ui.tooling)
-}
-
 compose.resources {
     packageOfResClass = "org.jetbrains.kotlinconf.generated.resources"
 }
