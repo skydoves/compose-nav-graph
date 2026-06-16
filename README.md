@@ -40,6 +40,14 @@ The sponsors listed below made it possible for this project to be released as op
 
 **[CodeRabbit](https://coderabbit.link/Jaewoong)** is an AI-powered code review platform that integrates directly into pull-request workflows and IDEs, examining code changes in context and suggesting improvements.
 
+<a href="https://howcomposeworks.com/">
+<img src="https://github.com/user-attachments/assets/0f0f72fc-49ce-48b5-b3dd-f2c04e907f80" width="13%" align="right"/>
+</a>
+
+## 📗 Jetpack Compose Mechanisms Book
+
+[Jetpack Compose Mechanisms](https://howcomposeworks.com/) takes you from "how to use Compose" into "how Compose actually works," tracing the AOSP source line by line through the compiler, runtime, and UI layers beneath every Composable, with practical, production-ready examples from the author's own Compose tooling and libraries. It then ties all three layers together into deep, real-world performance tuning, from stability inference to the skip decision. Fully updated for Kotlin 2.4.0 and Compose Compiler 2.4.0.
+
 ## 📖 Article
 
 For a guided tour of the whole toolkit, read the walkthrough article **[Compose Navigation Graph: Visualize Your Entire App Flow in Android Studio](https://doveletter.dev/articles/compose-nav-graph-plugin)**, which goes from annotating your first screen to validating navigation in pull requests.
