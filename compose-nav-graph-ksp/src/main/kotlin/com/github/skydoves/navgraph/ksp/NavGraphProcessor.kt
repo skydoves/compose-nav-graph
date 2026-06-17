@@ -128,6 +128,7 @@ internal class NavGraphProcessor(
       .forEach { fn ->
         fn.annotationsNamed(NAV_PREVIEW).forEach { ann ->
           val route = ann.typeArgFqn("route") ?: return@forEach
+          val size = previewSizeOf(fn)
           previews.getOrPut(route) { mutableListOf() }.add(
             NavPreviewRef(
               previewName = fn.simpleName.asString(),
@@ -136,6 +137,9 @@ internal class NavGraphProcessor(
               previewParameters = previewParametersOf(fn),
               primary = ann.boolArg("primary"),
               locale = previewLocaleOf(fn),
+              widthDp = size.widthDp,
+              heightDp = size.heightDp,
+              device = size.device,
             ),
           )
         }
@@ -319,6 +323,7 @@ internal class NavGraphProcessor(
             fn.simpleName.asString()
           }
           val n = seen.merge(base, 1, Int::plus)!!
+          val size = previewSizeOf(fn)
           NavPreviewRef(
             previewName = if (n == 1) base else "$base#$n",
             previewFqn = fn.qualifiedName?.asString(),
@@ -326,6 +331,9 @@ internal class NavGraphProcessor(
             previewParameters = previewParametersOf(fn),
             primary = false,
             locale = previewLocaleOf(fn),
+            widthDp = size.widthDp,
+            heightDp = size.heightDp,
+            device = size.device,
           )
         }
       // The slug is lossy (two packages/modules differing only by `_` vs `.`/`-`/`:` collapse to one), so append
@@ -402,6 +410,37 @@ internal class NavGraphProcessor(
     }
     return null
   }
+
+  /**
+   * The `@Preview(widthDp/heightDp/device)` sizing the function's preview declares (null per field when none).
+   * Walks annotations in declaration order — recursing into multipreview meta-annotations (same cycle guard as
+   * [previewLocaleOf]) — and returns the FIRST `@Preview` that declares any sizing, taking width/height/device
+   * from that one annotation so a landscape preview's width and height stay paired.
+   */
+  private fun previewSizeOf(fn: KSFunctionDeclaration): PreviewSize =
+    firstPreviewSize(fn.annotations, mutableSetOf()) ?: PreviewSize(null, null, null)
+
+  private fun firstPreviewSize(
+    annotations: Sequence<KSAnnotation>,
+    visited: MutableSet<String>,
+  ): PreviewSize? {
+    for (ann in annotations) {
+      val decl = ann.annotationType.resolve().declaration as? KSClassDeclaration ?: continue
+      val name = decl.qualifiedName?.asString() ?: continue
+      if (name == PREVIEW) {
+        val w = ann.intArg("widthDp")?.takeIf { it > 0 }
+        val h = ann.intArg("heightDp")?.takeIf { it > 0 }
+        val device = ann.stringArg("device")?.takeIf(String::isNotBlank)
+        if (w != null || h != null || device != null) return PreviewSize(w, h, device)
+        continue
+      }
+      if (!visited.add(name)) continue
+      firstPreviewSize(decl.annotations, visited)?.let { return it }
+    }
+    return null
+  }
+
+  private data class PreviewSize(val widthDp: Int?, val heightDp: Int?, val device: String?)
 
   /**
    * Serializable properties = the navigation arguments: primary-constructor properties (in ctor order) then
@@ -624,6 +663,8 @@ private fun KSAnnotation.typeArgFqn(name: String): String? {
 private fun KSAnnotation.stringArg(name: String): String? = arg(name) as? String
 
 private fun KSAnnotation.boolArg(name: String): Boolean = arg(name) as? Boolean ?: false
+
+private fun KSAnnotation.intArg(name: String): Int? = arg(name) as? Int
 
 private fun KSAnnotation.arg(name: String): Any? = arguments.firstOrNull {
   it.name?.asString() ==

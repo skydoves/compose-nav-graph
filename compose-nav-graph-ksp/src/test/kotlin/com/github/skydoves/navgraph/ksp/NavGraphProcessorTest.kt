@@ -369,6 +369,56 @@ class NavGraphProcessorTest {
   }
 
   @Test
+  fun navPreview_carriesPreviewSizeAndDevice() {
+    val graph = compileNavGraph(
+      SourceFile.kotlin(
+        "Previews.kt",
+        """
+        package com.app
+        import androidx.compose.ui.tooling.preview.Preview
+        import androidx.navigation3.runtime.NavKey
+        import com.github.skydoves.navgraph.annotations.NavPreview
+        class Profile : NavKey
+        @Preview(widthDp = 1280, heightDp = 800, device = "spec:width=1280dp,height=800dp,dpi=240")
+        @NavPreview(route = Profile::class, primary = true)
+        fun ProfilePreview() {}
+        """.trimIndent(),
+      ),
+      PREVIEW_STUB,
+    )
+
+    val preview = graph.node("Profile").previews.single()
+    assertEquals(1280, preview.widthDp)
+    assertEquals(800, preview.heightDp)
+    assertEquals("spec:width=1280dp,height=800dp,dpi=240", preview.device)
+  }
+
+  @Test
+  fun navPreview_withoutSize_hasNullSize() {
+    val graph = compileNavGraph(
+      SourceFile.kotlin(
+        "Previews.kt",
+        """
+        package com.app
+        import androidx.compose.ui.tooling.preview.Preview
+        import androidx.navigation3.runtime.NavKey
+        import com.github.skydoves.navgraph.annotations.NavPreview
+        class Profile : NavKey
+        @Preview
+        @NavPreview(route = Profile::class, primary = true)
+        fun ProfilePreview() {}
+        """.trimIndent(),
+      ),
+      PREVIEW_STUB,
+    )
+
+    val preview = graph.node("Profile").previews.single()
+    assertEquals(null, preview.widthDp)
+    assertEquals(null, preview.heightDp)
+    assertEquals(null, preview.device)
+  }
+
+  @Test
   fun navPreview_multiplePreviewsSortPrimaryFirst() {
     val graph = compileNavGraph(
       SourceFile.kotlin(

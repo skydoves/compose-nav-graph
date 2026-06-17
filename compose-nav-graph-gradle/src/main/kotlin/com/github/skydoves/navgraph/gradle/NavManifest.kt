@@ -66,6 +66,9 @@ internal data class HPreview(
   val thumbnail: String? = null,
   val primary: Boolean = false,
   val locale: String? = null,
+  val widthDp: Int? = null,
+  val heightDp: Int? = null,
+  val device: String? = null,
 )
 
 internal data class HPreviewParam(val name: String = "", val provider: String = "")
@@ -109,6 +112,9 @@ internal fun parseGraph(text: String): HGraph {
           thumbnail = po.str("thumbnail"),
           primary = po.bool("primary"),
           locale = po.str("locale"),
+          widthDp = po.int("widthDp"),
+          heightDp = po.int("heightDp"),
+          device = po.str("device"),
         )
       },
       start = o.bool("start"),
