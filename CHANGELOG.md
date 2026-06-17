@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-06-17
+
+### Added
+- **`@Preview` size in thumbnails** ([#13](https://github.com/skydoves/compose-nav-graph/issues/13)): the KSP processor now captures `@Preview`'s `widthDp`, `heightDp`, and `device` (declared directly or via a multipreview meta-annotation), and the Layoutlib renderer renders each thumbnail at that size, so landscape, tablet, and custom-sized previews match what Android Studio shows.
+
+### Fixed
+- **Kotlin Multiplatform thumbnails render device free** ([#10](https://github.com/skydoves/compose-nav-graph/issues/10)): the plugin auto-adds the consumer's own Compose `ui-tooling` (which provides `ComposeViewAdapter`) to the KMP Android render classpath, so shared previews render instead of a "ComposeViewAdapter" placeholder. The renderer also now treats a missing `ComposeViewAdapter` as a render failure (reading the renderer's `missingClasses`) rather than accepting the placeholder as a successful thumbnail.
+- **IDE: full module path in the Project selector** ([#15](https://github.com/skydoves/compose-nav-graph/issues/15)): nested feature modules that share a final segment (e.g. `feature:name:impl` and `feature:name:sample`) now show their Gradle path instead of an ambiguous `impl` / `sample`.
+- **IDE: nested-module discovery** ([#14](https://github.com/skydoves/compose-nav-graph/issues/14)): when the Gradle model is unavailable, the tool window's fallback scan now walks nested modules instead of only the project root's direct children.
+
 ## [0.1.1] - 2026-06-13
 
 ### Added
