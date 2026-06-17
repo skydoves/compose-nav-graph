@@ -140,6 +140,9 @@ public data class NavPreviewRef(
   val thumbnail: String? = null,
   val primary: Boolean = false,
   val locale: String? = null,
+  val widthDp: Int? = null,
+  val heightDp: Int? = null,
+  val device: String? = null,
 )
 
 /**

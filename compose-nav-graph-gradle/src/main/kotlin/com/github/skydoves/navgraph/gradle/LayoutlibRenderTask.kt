@@ -121,6 +121,9 @@ public abstract class LayoutlibRenderTask : DefaultTask() {
     val id: String,
     val params: List<HPreviewParam>,
     val locale: String?,
+    val widthDp: Int?,
+    val heightDp: Int?,
+    val device: String?,
   )
 
   @TaskAction
@@ -150,6 +153,9 @@ public abstract class LayoutlibRenderTask : DefaultTask() {
                 "nav${i++}",
                 pv.previewParameters,
                 pv.locale,
+                pv.widthDp,
+                pv.heightDp,
+                pv.device,
               ),
             )
           }
@@ -219,7 +225,17 @@ public abstract class LayoutlibRenderTask : DefaultTask() {
             // `@DevicePreviews`-annotated preview already carries its own device and renders fine either way.
             putJsonObject("previewParams") {
               put("apiLevel", apiLevel.get())
-              put("device", PREVIEW_DEVICE)
+              // Honor @Preview sizing (#13): an explicit `device` passes through; otherwise widthDp/heightDp
+              // synthesize a device spec (an unset dimension keeps the default 411/891 canvas). The fixed phone
+              // default (above) still applies when the preview declares no size, so unsized lazy layouts stay bounded.
+              put(
+                "device",
+                s.device ?: if (s.widthDp != null || s.heightDp != null) {
+                  "spec:width=${s.widthDp ?: 411}dp,height=${s.heightDp ?: 891}dp,dpi=420"
+                } else {
+                  PREVIEW_DEVICE
+                },
+              )
               // The @Preview(locale = …) qualifier, extracted by KSP (a multipreview's meta-annotation isn't
               // visible to the renderer itself, so it must be passed explicitly).
               s.locale?.let { put("locale", it) }

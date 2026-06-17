@@ -44,6 +44,9 @@ internal val PREVIEW_STUB = SourceFile.kotlin(
   annotation class Preview(
     val name: String = "",
     val locale: String = "",
+    val widthDp: Int = -1,
+    val heightDp: Int = -1,
+    val device: String = "",
   )
   """.trimIndent(),
 )
