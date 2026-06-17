@@ -47,6 +47,12 @@ internal object NavGraphReader {
    */
   private const val SUPPORTED_SCHEMA = 1
 
+  /** Bounded recursion for the no-Gradle-model fallback scan (deep enough for `feature/name/impl` nesting). */
+  private const val MAX_FALLBACK_DEPTH = 6
+
+  /** Dirs the fallback scan never descends into (build outputs, VCS/IDE metadata, sources). */
+  private val SKIP_DIRS = setOf("build", ".gradle", ".git", ".idea", "node_modules", "src")
+
   /** Manifest path relative to a Gradle module dir (written by the `generateNavGraph` task). */
   private const val MANIFEST_REL = "build/navgraph/nav-graph.json"
 
@@ -85,7 +91,7 @@ internal object NavGraphReader {
         if (merged.graph.nodes.isEmpty()) return@mapNotNull null
         LoadedScope(
           id = scope.root,
-          name = navProjects[scope.root]?.name ?: File(scope.root).name,
+          name = navProjects[scope.root]?.name ?: moduleLabel(scope.root, project.basePath),
           graph = merged.graph,
           thumbs = merged.thumbs,
         )
@@ -118,7 +124,9 @@ internal object NavGraphReader {
       val path = ExternalSystemApiUtil.getExternalProjectPath(module) ?: continue
       if (path !in navProjects) {
         val manifest = File(path, MANIFEST_REL)
-        if (manifest.isFile) navProjects[path] = NavProject(path, File(path).name, manifest)
+        if (manifest.isFile) {
+          navProjects[path] = NavProject(path, moduleLabel(path, project.basePath), manifest)
+        }
       }
       val deps = directDeps.getOrPut(path) { LinkedHashSet() }
       for (dep in ModuleRootManager.getInstance(module).dependencies) {
@@ -131,17 +139,48 @@ internal object NavGraphReader {
 
   /**
    * Fallback when the IntelliJ external-system model is unavailable (project not yet imported
-   * as Gradle): scan the direct children of the project root for manifests, each its own scope.
-   * No dependency info ⇒ no merging.
+   * as Gradle): walk the source tree (bounded depth) for module manifests, including NESTED
+   * feature modules, each its own scope. No dependency info ⇒ no merging.
    */
   private fun fallbackNavProjects(project: Project): Map<String, NavProject> {
     val base = project.basePath ?: return emptyMap()
     val out = LinkedHashMap<String, NavProject>()
-    File(base).listFiles()?.forEach { child ->
-      val manifest = File(child, MANIFEST_REL)
-      if (manifest.isFile) out[child.path] = NavProject(child.path, child.name, manifest)
+
+    // Walk the source tree (NOT just the root's direct children) so NESTED feature modules like
+    // `feature/name/impl` are found when the Gradle model is unavailable. Bounded depth + skip build/VCS dirs.
+    fun visit(dir: File, depth: Int) {
+      val manifest = File(dir, MANIFEST_REL)
+      if (manifest.isFile) {
+        out[dir.path] =
+          NavProject(dir.path, moduleLabel(dir.path, base), manifest)
+      }
+      if (depth >= MAX_FALLBACK_DEPTH) return
+      dir.listFiles()?.forEach { child ->
+        if (child.isDirectory && child.name !in SKIP_DIRS && !child.name.startsWith(".")) {
+          visit(child, depth + 1)
+        }
+      }
     }
+    visit(File(base), 0)
     return out
+  }
+
+  /**
+   * A disambiguating label for a module dir: its Gradle-style path relative to the project root
+   * (`:feature:name:impl`), so nested modules that share a last segment (`impl`, `sample`) stay distinct.
+   * Falls back to the dir name when the module isn't under the root.
+   */
+  private fun moduleLabel(path: String, basePath: String?): String {
+    val base = basePath ?: return File(path).name
+    if (File(path) == File(base)) return File(path).name
+    val rel = runCatching {
+      File(base).toPath().relativize(File(path).toPath()).toString()
+    }.getOrNull()
+    return if (rel.isNullOrEmpty() || rel.startsWith("..")) {
+      File(path).name
+    } else {
+      ":" + rel.replace(File.separatorChar, ':')
+    }
   }
 
   /**
