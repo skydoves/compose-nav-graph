@@ -37,6 +37,26 @@ module, the renderer runs against that app's fully merged Compose Multiplatform 
 module's, and every transitive dependency's). Your `composeResources` images, fonts, and strings all show up in the
 thumbnails.
 
+!!! note "Compose `ui-tooling` on the render classpath"
+
+    Layoutlib renders a `@Preview` through `androidx.compose.ui.tooling.ComposeViewAdapter`, which ships in Compose
+    `ui-tooling`. On a KMP module the device free render runs against the **Android target's runtime classpath**
+    (`androidRuntimeClasspath`), where `ui-tooling` isn't present by default — without it the renderer emits a
+    placeholder for every preview. The plugin **auto-adds it for you** when the JetBrains Compose plugin
+    (`org.jetbrains.compose`) is applied — the usual Compose Multiplatform case — at your project's own Compose
+    version, so there's nothing to configure. Add it by hand only when auto-wiring can't apply (`autoDependencies =
+    false`, or a module on AndroidX Compose without the `org.jetbrains.compose` plugin):
+
+    ```kotlin
+    dependencies {
+        androidRuntimeClasspath(compose.uiTooling) // Compose Multiplatform
+        // androidx Compose: androidRuntimeClasspath("androidx.compose.ui:ui-tooling:<your compose version>")
+    }
+    ```
+
+    A plain `debugImplementation(…ui-tooling)` is **not** enough on KMP — the render reads the Android *runtime*
+    classpath, not a debug runtime.
+
 Two render backends cooperate (see [`renderBackend`](gradle-plugin/configuration.md#renderbackend)):
 
 - **Layoutlib** (device free, fast): the same engine Android Studio uses for `@Preview`. Most screens render here.

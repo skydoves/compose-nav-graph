@@ -97,6 +97,12 @@ public abstract class LayoutlibRenderTask : DefaultTask() {
   @get:Input
   public abstract val apiLevel: Property<String>
 
+  /** Whether this module is Kotlin Multiplatform — only tailors the actionable hint when the preview host
+   *  ([COMPOSE_VIEW_ADAPTER]) is missing from the render classpath (KMP fixes it on the Android runtime classpath,
+   *  plain Android via `debugImplementation`). */
+  @get:Input
+  public abstract val kmpModule: Property<Boolean>
+
   /** Scratch dir for the generated JSON + raw PNGs + results.json (not the consumed thumbnails). */
   @get:Internal
   public abstract val workDir: DirectoryProperty
@@ -137,8 +143,13 @@ public abstract class LayoutlibRenderTask : DefaultTask() {
           } else {
             add(
               Shot(
-                node.id, pv.previewName, pv.primary, method, "nav${i++}",
-                pv.previewParameters, pv.locale,
+                node.id,
+                pv.previewName,
+                pv.primary,
+                method,
+                "nav${i++}",
+                pv.previewParameters,
+                pv.locale,
               ),
             )
           }
@@ -304,6 +315,13 @@ public abstract class LayoutlibRenderTask : DefaultTask() {
             "missing classes on the render classpath — " +
               "${res.brokenClasses.joinToString()}"
 
+          res.missingClasses.any { it.endsWith("ComposeViewAdapter") } ->
+            "the preview host '$COMPOSE_VIEW_ADAPTER' is missing from the render classpath"
+
+          res.missingClasses.isNotEmpty() ->
+            "missing classes on the render classpath — " +
+              "${res.missingClasses.joinToString()}"
+
           res.problems.isNotEmpty() -> "render problem — ${res.problems.first()}"
 
           res.message != null -> res.message
@@ -316,6 +334,23 @@ public abstract class LayoutlibRenderTask : DefaultTask() {
       }
     }
     indexFile.writeText(index.toString())
+
+    // ComposeViewAdapter (Compose `ui-tooling`) absent from the render classpath ⇒ the renderer emits a placeholder
+    // for EVERY preview (issue #10, typically KMP). navgraph auto-adds ui-tooling; if it couldn't (autoDependencies
+    // = false, or an undetectable Compose setup), tell the consumer exactly what to add.
+    if (byId.values.any { r -> r.missingClasses.any { it.endsWith("ComposeViewAdapter") } }) {
+      val fix = if (kmpModule.getOrElse(false)) {
+        "add it to the Android runtime classpath: " +
+          "androidRuntimeClasspath(compose.uiTooling) (Compose Multiplatform) or " +
+          "androidRuntimeClasspath(\"androidx.compose.ui:ui-tooling:<version>\")"
+      } else {
+        "add debugImplementation(\"androidx.compose.ui:ui-tooling:<version>\")"
+      }
+      logger.warn(
+        "navgraph: previews can't render — the preview host '$COMPOSE_VIEW_ADAPTER' " +
+          "(Compose 'ui-tooling') is missing from the render classpath. $fix",
+      )
+    }
 
     if (ok == 0) {
       logger.warn(

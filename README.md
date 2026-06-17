@@ -274,7 +274,8 @@ module shape and wires the right KSP pass automatically:
 - **KMP + Android**: the graph is extracted from the Android compilation, and every screen still gets a device free
   thumbnail. A shared module has no Android resources of its own, so the renderer reuses the consuming Android app's
   merged Compose Multiplatform resources automatically. Complex Compose Multiplatform screens that Layoutlib can't
-  draw fall back to the Robolectric backend (`renderBackend` defaults to `AUTO`).
+  draw fall back to the Robolectric backend (`renderBackend` defaults to `AUTO`). The plugin auto-adds the Compose
+  `ui-tooling` that device free rendering needs on KMP, so this works with only the plugin applied.
 - **KMP without Android** (iOS/JS/wasm only): extraction runs on the common metadata pass and produces a structure
   only graph: nodes, typed arguments, and transitions, without thumbnails.
 
