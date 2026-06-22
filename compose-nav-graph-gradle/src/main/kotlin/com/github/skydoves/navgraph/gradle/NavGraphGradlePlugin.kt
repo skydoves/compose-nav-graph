@@ -1153,20 +1153,47 @@ public class NavGraphGradlePlugin : Plugin<Project> {
 
   /** The `com.android.application` whose linked resources feed the KMP render: [module] ITSELF when it carries the
    *  application plugin (a single-module Compose-Multiplatform app — KMP + `com.android.application` on one module —
-   *  links its own R/.ap_, so it needs no external consumer), else the first application project that declares a
-   *  dependency on [module]. Checks the always-created `implementation` configuration (variant runtime classpaths
-   *  like `devDebugRuntimeClasspath` are registered lazily, so iterating their names at `projectsEvaluated` is
+   *  links its own R/.ap_, so it needs no external consumer), else the first application project that
+   *  **transitively** depends on [module]. A feature module is often several hops below the app (`:app` →
+   *  `:composeApp` → `:feature:x`); the app links its FULL transitive resource closure, so any app that can reach
+   *  [module] through project dependencies can render it. Walks DECLARED project deps (the always-created declarable
+   *  buckets; variant runtime classpaths are registered lazily, so iterating them at `projectsEvaluated` is
    *  unreliable). */
   private fun findConsumingAndroidApp(module: Project): Project? =
     module.takeIf { it.plugins.hasPlugin("com.android.application") }
       ?: module.rootProject.allprojects.firstOrNull { candidate ->
         candidate.path != module.path &&
           candidate.plugins.hasPlugin("com.android.application") &&
-          candidate.configurations.findByName("implementation")
-            ?.allDependencies?.any {
-              it is ProjectDependency && projectDependencyPath(it) == module.path
-            } == true
+          appReachesModule(candidate, module.path)
       }
+
+  /** Whether [app]'s project-dependency closure (transitively) reaches [targetPath]. BFS over [directProjectDeps],
+   *  visited-guarded so dependency cycles can't loop. */
+  private fun appReachesModule(app: Project, targetPath: String): Boolean {
+    val visited = hashSetOf(app.path)
+    val queue = ArrayDeque(listOf(app))
+    while (queue.isNotEmpty()) {
+      for (depPath in directProjectDeps(queue.removeFirst())) {
+        if (depPath == targetPath) return true
+        if (visited.add(depPath)) app.rootProject.findProject(depPath)?.let { queue.add(it) }
+      }
+    }
+    return false
+  }
+
+  /** The DECLARED project-dependency paths of [project], across the dependency buckets that carry a module edge into
+   *  an app's resource closure: plain `implementation`/`api` and the KMP `commonMain`/`androidMain` source sets.
+   *  Declarable buckets only (declared project edges are enough for reachability; resolved/variant configs are
+   *  lazy + unreliable here). */
+  private fun directProjectDeps(project: Project): Set<String> {
+    val out = LinkedHashSet<String>()
+    for (name in DEP_EDGE_CONFIGS) {
+      project.configurations.findByName(name)?.allDependencies?.forEach { dep ->
+        if (dep is ProjectDependency) projectDependencyPath(dep)?.let { out.add(it) }
+      }
+    }
+    return out
+  }
 
   /** The consuming app's debug variant — `debug`, or `<flavor>Debug` (e.g. `devDebug`) when flavored. Reads the
    *  first product flavor off the `android` extension reflectively (no AGP compile dependency); iterating the
@@ -1197,6 +1224,17 @@ public class NavGraphGradlePlugin : Plugin<Project> {
       "com.android.application",
       "com.android.library",
       "com.android.kotlin.multiplatform.library",
+    )
+
+    /** Declarable dependency buckets walked to find an app's transitive project-dependency closure (a module edge
+     *  into the app's resource closure flows through these): plain Android + the KMP commonMain/androidMain sets. */
+    val DEP_EDGE_CONFIGS = listOf(
+      "implementation",
+      "api",
+      "commonMainImplementation",
+      "commonMainApi",
+      "androidMainImplementation",
+      "androidMainApi",
     )
 
     // KMP without Android: the common-metadata KSP pass, structure only, no render.
