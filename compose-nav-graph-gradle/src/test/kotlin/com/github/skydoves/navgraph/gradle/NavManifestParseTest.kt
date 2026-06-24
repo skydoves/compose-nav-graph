@@ -24,6 +24,52 @@ import org.junit.Test
 class NavManifestParseTest {
 
   @Test
+  fun filterByPackage_keepsNodesUnderPrefixAndDropsCrossFeatureEdges() {
+    val graph = HGraph(
+      nodes = listOf(
+        HNode(id = "app.feed.FeedRoute", clickTargetFqn = "app.feed.FeedScreen"),
+        HNode(id = "app.feed.detail.DetailRoute"),
+        HNode(id = "app.profile.ProfileRoute"),
+      ),
+      edges = listOf(
+        HEdge(from = "app.feed.FeedRoute", to = "app.feed.detail.DetailRoute"),
+        HEdge(from = "app.feed.FeedRoute", to = "app.profile.ProfileRoute"),
+      ),
+    )
+
+    val feed = filterGraphByPackage(graph, "app.feed")
+
+    assertEquals(
+      listOf("app.feed.FeedRoute", "app.feed.detail.DetailRoute"),
+      feed.nodes.map {
+        it.id
+      },
+    )
+    assertEquals(1, feed.edges.size)
+    assertEquals("app.feed.detail.DetailRoute", feed.edges.single().to)
+  }
+
+  @Test
+  fun filterByPackage_matchesViaScreenFqnAndIgnoresPartialSegments() {
+    val graph = HGraph(
+      nodes = listOf(
+        HNode(id = "app.routes.SearchRoute", clickTargetFqn = "app.feed.SearchScreen"),
+        HNode(id = "app.feedback.FeedbackRoute"),
+      ),
+    )
+
+    // Kept via clickTargetFqn; `feedback` is NOT under `feed` (segment boundary).
+    val kept = filterGraphByPackage(graph, "app.feed").nodes.map { it.id }
+    assertEquals(listOf("app.routes.SearchRoute"), kept)
+  }
+
+  @Test
+  fun filterByPackage_blankPrefixReturnsUnchanged() {
+    val graph = HGraph(nodes = listOf(HNode(id = "app.A")))
+    assertEquals(graph, filterGraphByPackage(graph, ""))
+  }
+
+  @Test
   fun parsesNodesEdgesArgsAndStart() {
     val json = """
       {

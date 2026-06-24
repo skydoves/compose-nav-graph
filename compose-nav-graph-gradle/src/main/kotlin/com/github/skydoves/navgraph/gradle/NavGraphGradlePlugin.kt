@@ -575,6 +575,7 @@ public class NavGraphGradlePlugin : Plugin<Project> {
         manifest.set(graphSourceDir.map { it.file("nav-graph.json") })
         this.thumbsDir.set(graphSourceDir.map { it.dir("thumbs") })
         deviceSpec.set(providers.gradleProperty("navgraph.export.device").orElse(""))
+        packageFilter.set(providers.gradleProperty("navgraph.export.package").orElse(""))
         outputHtml.set(
           layout.file(providers.gradleProperty("navgraph.export.out").map { File(it) })
             .orElse(navgraphDir.map { it.file("nav-graph.html") }),
@@ -589,6 +590,7 @@ public class NavGraphGradlePlugin : Plugin<Project> {
         manifest.set(graphSourceDir.map { it.file("nav-graph.json") })
         this.thumbsDir.set(graphSourceDir.map { it.dir("thumbs") })
         deviceSpec.set(providers.gradleProperty("navgraph.export.device").orElse(""))
+        packageFilter.set(providers.gradleProperty("navgraph.export.package").orElse(""))
         scale.set(providers.gradleProperty("navgraph.export.scale").map { it.toInt() })
         outputImage.set(
           layout.file(providers.gradleProperty("navgraph.export.out").map { File(it) })

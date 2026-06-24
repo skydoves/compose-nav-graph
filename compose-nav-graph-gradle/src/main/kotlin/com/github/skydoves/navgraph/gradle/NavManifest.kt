@@ -75,6 +75,19 @@ internal data class HPreviewParam(val name: String = "", val provider: String = 
 
 internal data class HEdge(val from: String = "", val to: String = "", val label: String? = null)
 
+/** Restrict [graph] to a feature package [prefix] (e.g. `com.app.feature.feed`): keep nodes whose route FQN
+ *  (`id`) or screen FQN (`clickTargetFqn`) is under that package, plus edges with both endpoints kept. A blank
+ *  prefix returns [graph] unchanged. Backs the `-Pnavgraph.export.package=` filter for single-module apps that
+ *  organize screens by feature package. */
+internal fun filterGraphByPackage(graph: HGraph, prefix: String): HGraph {
+  if (prefix.isBlank()) return graph
+  fun underPackage(fqn: String?): Boolean =
+    fqn != null && (fqn == prefix || fqn.startsWith("$prefix."))
+  val nodes = graph.nodes.filter { underPackage(it.id) || underPackage(it.clickTargetFqn) }
+  val ids = nodes.mapTo(HashSet()) { it.id }
+  return graph.copy(nodes = nodes, edges = graph.edges.filter { it.from in ids && it.to in ids })
+}
+
 internal fun parseGraph(text: String): HGraph {
   val root = Json.parseToJsonElement(text).jsonObject
   val nodes = root.arr("nodes").map { el ->

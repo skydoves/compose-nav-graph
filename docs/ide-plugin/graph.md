@@ -10,6 +10,10 @@ The tool window shows the **whole app**, not one module at a time. The graph is 
 
 If your repository holds more than one independent app (several `:app`-like roots), each is loaded as its own selectable scope. The tool window remembers your last selected scope per project, and falls back to the first one if a module was removed or renamed.
 
+## Scope by Feature
+
+If your app keeps every screen in a single module and organizes them by feature package (for example `feature.feed`, `feature.profile`), a **Feature:** selector appears in the toolbar. It narrows the canvas to one feature's destinations at a time, so a large single-module graph stays readable. Features are discovered automatically from your package layout (the segment that follows the package all your screens share), and nested screens fold into their feature. The selector stays hidden when the graph has nothing to split. Picking a feature also scopes the [Export](#export) to that subgraph, matching what you see on screen.
+
 ## Thumbnails and Arguments
 
 Every node that has a `@NavPreview` shows that preview's **rendered thumbnail**: the same Layoutlib render produced at build time, no device needed. Nodes also list the route class's serializable properties as **typed argument rows**, so you can see at a glance what data each destination expects. Both regions can be toggled off in settings if you want a denser, structure only layout.

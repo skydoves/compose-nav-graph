@@ -61,6 +61,12 @@ public abstract class ExportNavGraphHtmlTask : DefaultTask() {
   @get:Optional
   public abstract val deviceSpec: Property<String>
 
+  /** "" = the whole graph; else a package prefix (e.g. "com.app.feature.feed") to export only that feature's
+   *  subgraph (nodes whose route/screen FQN is under it, plus their internal edges). */
+  @get:Input
+  @get:Optional
+  public abstract val packageFilter: Property<String>
+
   @get:OutputFile
   public abstract val outputHtml: RegularFileProperty
 
@@ -73,7 +79,11 @@ public abstract class ExportNavGraphHtmlTask : DefaultTask() {
   @TaskAction
   public fun export() {
     val manifestFile = manifest.get().asFile
-    val graph = parseGraph(manifestFile.readText())
+    val pkg = packageFilter.orNull.orEmpty()
+    val graph = filterGraphByPackage(parseGraph(manifestFile.readText()), pkg)
+    if (pkg.isNotBlank() && graph.nodes.isEmpty()) {
+      logger.warn("navgraph: no destinations under package '$pkg'; exporting an empty graph.")
+    }
     val thumbsRoot: File? = thumbsDir.orNull?.asFile
     val device = parseDevice(deviceSpec.orNull)
     // "Generated" date = the graph data's timestamp (manifest mtime), not now() — keeps the output
