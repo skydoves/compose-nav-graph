@@ -29,7 +29,7 @@ Apply the plugin together with [KSP](https://github.com/google/ksp) in the `buil
 ```kotlin
 plugins {
     id("com.google.devtools.ksp") version "<ksp-version>"
-    id("com.github.skydoves.navgraph") version "0.1.2"
+    id("com.github.skydoves.navgraph") version "0.2.0"
 }
 ```
 
@@ -46,7 +46,7 @@ If you keep plugin versions in `libs.versions.toml`:
 ```toml
 [plugins]
 ksp = { id = "com.google.devtools.ksp", version = "<ksp-version>" }
-navgraph = { id = "com.github.skydoves.navgraph", version = "0.1.2" }
+navgraph = { id = "com.github.skydoves.navgraph", version = "0.2.0" }
 ```
 
 ```kotlin
