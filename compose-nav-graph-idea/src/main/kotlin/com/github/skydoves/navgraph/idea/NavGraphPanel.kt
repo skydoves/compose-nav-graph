@@ -57,6 +57,7 @@ import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.FlowLayout
 import java.awt.Font
+import java.awt.image.BufferedImage
 import java.io.File
 import java.nio.file.Path
 import javax.swing.DefaultListCellRenderer
@@ -98,10 +99,22 @@ internal class NavGraphPanel(private val project: Project, parentDisposable: Dis
   private var currentGraph: NavGraphDto? = null
 
   /**
+   * The selected scope's full graph + thumbs, before any "Feature:" filter. The feature selector narrows this
+   * into [currentGraph]; keeping the base lets the user switch features (and back to "All") without a reload.
+   */
+  private var baseGraph: NavGraphDto? = null
+  private var baseThumbs: Map<String, BufferedImage> = emptyMap()
+
+  /**
    * Guards [scopeCombo]'s listener while its items are rebuilt in [applyScopes] (else the
    * rebuild fires it).
    */
   private var suppressScopeEvents = false
+
+  /**
+   * Guards [featureCombo]'s listener while its items are rebuilt for a new scope (else the rebuild fires it).
+   */
+  private var suppressFeatureEvents = false
 
   /**
    * "Project:" selector — picks which independent app's graph to render. Hidden for single-app
@@ -115,8 +128,7 @@ internal class NavGraphPanel(private val project: Project, parentDisposable: Dis
       if (suppressScopeEvents) return@addActionListener
       (selectedItem as? NavGraphReader.LoadedScope)?.let { scope ->
         NavGraphSettings.getInstance(project).selectedScopeId = scope.id
-        currentGraph = scope.graph
-        canvas.setGraph(scope.graph, scope.thumbs)
+        setScope(scope)
       }
     }
   }
@@ -125,6 +137,28 @@ internal class NavGraphPanel(private val project: Project, parentDisposable: Dis
     isVisible = false
     add(JLabel("Project:"))
     add(scopeCombo)
+  }
+
+  /**
+   * "Feature:" selector — narrows a single-module graph to one feature package's subgraph (see
+   * [NavFeatureGrouping]). Hidden unless the graph splits into 2+ features; index 0 is "All features".
+   */
+  private val featureCombo = ComboBox<NavFeatureGrouping.Feature>().apply {
+    toolTipText = "Show only one feature's destinations (grouped by package within this module)"
+    renderer = SimpleListCellRenderer.create<NavFeatureGrouping.Feature>("") { it?.name ?: "" }
+    addActionListener {
+      if (suppressFeatureEvents) return@addActionListener
+      (selectedItem as? NavFeatureGrouping.Feature)?.let { feature ->
+        NavGraphSettings.getInstance(project).selectedFeaturePrefix = feature.packagePrefix
+        applyFeatureFilter(refit = true)
+      }
+    }
+  }
+  private val featurePanel = JPanel(FlowLayout(FlowLayout.LEFT, 6, 2)).apply {
+    isOpaque = false
+    isVisible = false
+    add(JLabel("Feature:"))
+    add(featureCombo)
   }
 
   init {
@@ -150,11 +184,16 @@ internal class NavGraphPanel(private val project: Project, parentDisposable: Dis
       add(JLabel("Device:"))
       add(deviceCombo)
     }
+    val selectors = JPanel(FlowLayout(FlowLayout.LEFT, 0, 0)).apply {
+      isOpaque = false
+      add(scopePanel)
+      add(featurePanel)
+    }
     val leftPanel = JPanel(BorderLayout()).apply {
       isOpaque = false
       add(actionToolbar.component, BorderLayout.WEST)
-      // the app selector sits right of the actions; shown only when >1 app
-      add(scopePanel, BorderLayout.CENTER)
+      // the app + feature selectors sit right of the actions; each shows only when it has a real choice
+      add(selectors, BorderLayout.CENTER)
     }
     val header = JPanel(BorderLayout()).apply {
       add(leftPanel, BorderLayout.WEST)
@@ -191,7 +230,9 @@ internal class NavGraphPanel(private val project: Project, parentDisposable: Dis
     if (loaded.isEmpty()) {
       // drop any stale items so a later load is clean
       withSuppressedScopeEvents { scopeCombo.removeAllItems() }
+      withSuppressedFeatureEvents { featureCombo.removeAllItems() }
       scopePanel.isVisible = false
+      featurePanel.isVisible = false
       cardLayout.show(cards, CARD_EMPTY)
       return
     }
@@ -205,11 +246,51 @@ internal class NavGraphPanel(private val project: Project, parentDisposable: Dis
       loaded.forEach { scopeCombo.addItem(it) }
       scopeCombo.selectedItem = selected
     }
-
     scopePanel.isVisible = loaded.size > 1
-    currentGraph = selected.graph
+
     cardLayout.show(cards, CARD_GRAPH)
-    canvas.setGraph(selected.graph, selected.thumbs)
+    setScope(selected)
+  }
+
+  /**
+   * Make [scope] the active graph: remember it as the unfiltered [baseGraph], rebuild the feature selector from
+   * its packages, restore the remembered feature (or "All features"), then render. Runs on first load and on
+   * every scope switch.
+   */
+  private fun setScope(scope: NavGraphReader.LoadedScope) {
+    baseGraph = scope.graph
+    baseThumbs = scope.thumbs
+
+    val features = NavFeatureGrouping.computeFeatures(scope.graph)
+    val rememberedPrefix = NavGraphSettings.getInstance(project).selectedFeaturePrefix
+    val selectedFeature =
+      features.firstOrNull { it.packagePrefix == rememberedPrefix } ?: ALL_FEATURES
+    withSuppressedFeatureEvents {
+      featureCombo.removeAllItems()
+      if (features.isNotEmpty()) {
+        featureCombo.addItem(ALL_FEATURES)
+        features.forEach { featureCombo.addItem(it) }
+        featureCombo.selectedItem = selectedFeature
+      }
+    }
+    // A single (or no) feature offers no choice — keep the selector hidden, like the app selector for one app.
+    featurePanel.isVisible = features.isNotEmpty()
+
+    applyFeatureFilter(refit = false)
+  }
+
+  /**
+   * Re-render [baseGraph] narrowed to the selected feature (whole graph for "All features"). [refit] reframes
+   * the canvas to the new subgraph — wanted on a user feature switch, but not on the initial per-scope render,
+   * which already honors the auto-fit setting.
+   */
+  private fun applyFeatureFilter(refit: Boolean) {
+    val base = baseGraph ?: return
+    val prefix = (featureCombo.selectedItem as? NavFeatureGrouping.Feature)?.packagePrefix.orEmpty()
+    val filtered = NavFeatureGrouping.filterByPackage(base, prefix)
+    currentGraph = filtered
+    canvas.setGraph(filtered, baseThumbs)
+    if (refit) canvas.fit()
   }
 
   /**
@@ -222,6 +303,18 @@ internal class NavGraphPanel(private val project: Project, parentDisposable: Dis
       block()
     } finally {
       suppressScopeEvents = false
+    }
+  }
+
+  /**
+   * Runs [block] with the feature-combo listener muted, always restoring the flag (even if Swing throws).
+   */
+  private inline fun withSuppressedFeatureEvents(block: () -> Unit) {
+    suppressFeatureEvents = true
+    try {
+      block()
+    } finally {
+      suppressFeatureEvents = false
     }
   }
 
@@ -440,10 +533,17 @@ internal class NavGraphPanel(private val project: Project, parentDisposable: Dis
     // Quote the path: ExternalSystem splits scriptParameters on unquoted whitespace, so a
     // destination with a space (e.g. "~/My Drive/…") would otherwise be truncated into stray
     // task names.
+    // When a feature is selected, export exactly that subgraph — the same `-Pnavgraph.export.package` filter the
+    // Gradle tasks honor — so the file matches what the tool window is showing. A package prefix has no spaces.
+    val featurePrefix =
+      (featureCombo.selectedItem as? NavFeatureGrouping.Feature)?.packagePrefix.orEmpty()
     val params = buildString {
       append("-Pnavgraph.export.out=\"").append(target.absolutePath).append('"')
       if (!device.isAuto) {
         append(" -Pnavgraph.export.device=").append(device.w).append('x').append(device.h)
+      }
+      if (featurePrefix.isNotBlank()) {
+        append(" -Pnavgraph.export.package=").append(featurePrefix)
       }
     }
 
@@ -525,6 +625,9 @@ internal class NavGraphPanel(private val project: Project, parentDisposable: Dis
     /** [JBCardLayout] keys: the Java2D graph/canvas vs. the Swing setup-guide empty state. */
     const val CARD_GRAPH = "graph"
     const val CARD_EMPTY = "empty"
+
+    /** The "no filter" entry shown first in the feature selector; its blank prefix means the whole scope. */
+    val ALL_FEATURES = NavFeatureGrouping.Feature("All features", "")
   }
 }
 

@@ -125,6 +125,13 @@ internal class NavGraphSettings : PersistentStateComponent<NavGraphSettings> {
    */
   var selectedScopeId: String = ""
 
+  /**
+   * Package prefix of the last-selected feature filter for a single-module app organized by feature packages
+   * (e.g. `com.app.feature.feed`). `""` = "All features" (no filter). A prefix that no longer matches any
+   * destination in the current scope falls back silently to "All".
+   */
+  var selectedFeaturePrefix: String = ""
+
   override fun getState(): NavGraphSettings = this
 
   override fun loadState(state: NavGraphSettings) {

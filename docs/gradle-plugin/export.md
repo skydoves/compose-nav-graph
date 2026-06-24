@@ -65,6 +65,7 @@ The export tasks accept a few `-P` Gradle properties to tweak the output without
 |----------|------------|--------|
 | `navgraph.export.device` | `exportNavGraphHtml`, `exportNavGraphImage` | Frames every thumbnail in a `WxH` device frame (letterboxed), e.g. `1080x2400`. Blank (the default) keeps each node at its rendered aspect. |
 | `navgraph.export.out` | `exportNavGraphHtml`, `exportNavGraphImage` | Redirects the output file to the given path. |
+| `navgraph.export.package` | `exportNavGraphHtml`, `exportNavGraphImage` | Exports only the destinations under a package prefix (e.g. `com.app.feature.feed`), nested screens included, plus their internal edges. For single module apps organized by feature package. Blank (the default) exports the whole graph. |
 | `navgraph.export.scale` | `exportNavGraphImage`, `exportPreviewGalleryImage` | Supersampling factor for crisp hi-DPI PNGs (default `2`, clamped to `1`..`8`). |
 | `navgraph.gallery.out` | `exportPreviewGalleryHtml`, `exportPreviewGalleryImage` | Redirects the gallery output file to the given path. |
 
@@ -76,6 +77,18 @@ For example, to export a hi-DPI PNG with phone framed thumbnails to a custom loc
     -Pnavgraph.export.scale=3 \
     -Pnavgraph.export.out=docs/nav-graph.png
 ```
+
+## Scope the export to one feature
+
+If your app keeps every screen in a single module and organizes them by feature package, you can export one feature's subgraph at a time with `navgraph.export.package`. It keeps the destinations whose route or screen lives under the given package (nested screens included) and drops any edge that crosses out of it:
+
+```bash
+./gradlew :app:exportNavGraphImage \
+    -Pnavgraph.export.package=com.app.feature.feed \
+    -Pnavgraph.export.out=docs/feed-graph.png
+```
+
+The IDE tool window exposes the same filter as a "Feature:" selector, so exporting from there passes this property for the feature you are currently viewing.
 
 ## Embedding in Docs
 
