@@ -19,7 +19,7 @@ plugins {
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.ksp)
-  id("com.github.skydoves.navgraph") version "0.1.2"
+  id("com.github.skydoves.navgraph") version "0.2.0"
 }
 
 android {

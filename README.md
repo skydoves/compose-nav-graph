@@ -102,7 +102,7 @@ Then apply the plugin and KSP to the module that holds your screens. That's all.
 // build.gradle.kts
 plugins {
     id("com.google.devtools.ksp") version "<matching your Kotlin version>"
-    id("com.github.skydoves.navgraph") version "0.1.2"
+    id("com.github.skydoves.navgraph") version "0.2.0"
 }
 ```
 

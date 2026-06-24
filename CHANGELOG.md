@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-06-24
+
+### Added
+- **Scope the graph by feature package** ([#19](https://github.com/skydoves/compose-nav-graph/issues/19)): a single-module app that organizes its screens by feature package can now view and export the navigation graph one feature at a time. The Gradle export tasks accept `-Pnavgraph.export.package=<prefix>` to export only the destinations under a package (matched by route or screen FQN, keeping internal edges and dropping cross-feature ones), and the IDE tool window adds a "Feature:" selector (auto-discovered from the package layout) that slices the graph and scopes the export to match what is on screen.
+
+### Fixed
+- **KMP feature modules render thumbnails via the transitively reachable app** ([#20](https://github.com/skydoves/compose-nav-graph/issues/20)): a feature module reached only indirectly by the `com.android.application` module (through one or more intermediate modules) now finds that app for its render classpath, so its shared previews are rendered instead of skipped.
+
 ## [0.1.2] - 2026-06-17
 
 ### Added
