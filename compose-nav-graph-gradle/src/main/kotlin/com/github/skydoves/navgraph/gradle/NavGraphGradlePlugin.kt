@@ -998,18 +998,22 @@ public class NavGraphGradlePlugin : Plugin<Project> {
           rClassPath.from(
             layout.buildDirectory.dir("intermediates").map { d ->
               // The FULL R closure — this module's R AND every dependency's R, incl. androidx (e.g.
-              // androidx.customview.poolingcontainer.R, which a ComposeView-backed preview loads at render). For an
-              // app the AAPT2-linked R is under compile_and_runtime_r_class_jar/<variant> (the app links
-              // everything); for a library the main R is module-only, so the closure lives under <variant>UnitTest.
-              // CRUCIAL: take ONLY the linked `process<…>Resources` R — whose IDs match the unit-test `.ap_` we
-              // feed — NOT the sibling `generate<…>StubRFile` R, a stub with PHANTOM ids. With non-transitive R a
-              // cross-module `R.string.x` is a non-final field resolved at render time; if the stub (listed first)
-              // wins the classloader, the id points at nothing in the `.ap_` → Resources$NotFoundException → a
-              // blank/failed render (this is why feature modules that reference another module's R went blank).
+              // androidx.customview.poolingcontainer.R$id, which EVERY ComposeView-backed preview loads at render
+              // via PoolingContainer.<clinit>; if it's absent the renderer aborts at ComposeViewAdapter and the
+              // preview silently falls back to the portrait Robolectric path). The app's AAPT2-linked R jar dir
+              // varies by AGP config/version — `compile_and_runtime_r_class_jar` OR
+              // `compile_and_runtime_not_namespaced_r_class_jar` — so match BOTH via `compile_and_runtime*r_class_jar`
+              // (the same wildcard wireKmpConsumerResources uses for the consuming app); a library's module-only R
+              // closure lives under <variant>UnitTest. CRUCIAL: take ONLY the linked `process<…>Resources` R — whose
+              // IDs match the unit-test `.ap_` we feed — NOT the sibling `generate<…>StubRFile` R, a stub with
+              // PHANTOM ids. With non-transitive R a cross-module `R.string.x` is a non-final field resolved at
+              // render time; if the stub (listed first) wins the classloader, the id points at nothing in the `.ap_`
+              // → Resources$NotFoundException → a blank/failed render (why feature modules referencing another
+              // module's R went blank).
               fileTree(d.asFile).matching {
                 include(
-                  "**/compile_and_runtime_r_class_jar/$v/process*Resources/R.jar",
-                  "**/compile_and_runtime_r_class_jar/${v}UnitTest/process*Resources/R.jar",
+                  "**/compile_and_runtime*r_class_jar/$v/process*Resources/R.jar",
+                  "**/compile_and_runtime*r_class_jar/${v}UnitTest/process*Resources/R.jar",
                 )
               }
             },
