@@ -9,7 +9,7 @@ KMP specific configuration: you apply the same two plugins as on a plain Android
 // shared/build.gradle.kts
 plugins {
     id("com.google.devtools.ksp") version "<matching your Kotlin version>"
-    id("com.github.skydoves.navgraph") version "0.2.0"
+    id("com.github.skydoves.navgraph") version "0.2.1"
 }
 ```
 

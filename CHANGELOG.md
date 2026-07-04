@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-07-04
+
+### Fixed
+- **Preview thumbnails render at the `@Preview` size regardless of the app's AGP R-class form** ([#13](https://github.com/skydoves/compose-nav-graph/issues/13), [#24](https://github.com/skydoves/compose-nav-graph/pull/24)): every ComposeView-backed preview loads `androidx.customview.poolingcontainer.R$id` at render, and that class ships only in the app's AAPT2-linked R.jar. The render classpath matched that jar under `compile_and_runtime_r_class_jar` only, so an app whose linked R lives under `compile_and_runtime_not_namespaced_r_class_jar` (a different AGP config or version) lost it, and every preview fell back to a fixed portrait render with the `@Preview` size ignored. Both forms are now matched, so device-free thumbnails render correctly again.
+
 ## [0.2.0] - 2026-06-24
 
 ### Added

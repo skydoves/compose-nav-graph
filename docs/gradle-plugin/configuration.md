@@ -98,8 +98,8 @@ navgraph {
 }
 
 dependencies {
-    implementation("com.github.skydoves:compose-nav-graph-annotations:0.2.0")
-    ksp("com.github.skydoves:compose-nav-graph-ksp:0.2.0")
+    implementation("com.github.skydoves:compose-nav-graph-annotations:0.2.1")
+    ksp("com.github.skydoves:compose-nav-graph-ksp:0.2.1")
 }
 ```
 
