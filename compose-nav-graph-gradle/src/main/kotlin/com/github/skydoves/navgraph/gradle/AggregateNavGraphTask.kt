@@ -18,6 +18,7 @@ package com.github.skydoves.navgraph.gradle
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
@@ -196,12 +197,42 @@ public abstract class AggregateNavGraphTask : DefaultTask() {
     return JsonObject(node + ("previews" to JsonArray(rewritten)))
   }
 
-  /** Of two copies of the same node id, keep the one carrying more rendered thumbnails (a real node beats a
-   *  no-preview stub); ties keep the incumbent. */
+  /**
+   * Combine two copies of the same node id field by field, each field taken from whichever copy actually has it.
+   *
+   * Picking a whole winner by thumbnail count is not enough: with `renderThumbnails = false`, and on KMP, no copy
+   * has any thumbnail, so the incumbent won — and since a module's own manifest is merged first, an umbrella that
+   * merely *references* a route kept its bare stub and threw away the owning module's `clickTargetFqn` and source
+   * location. The node then reads as a route no `@NavDestination` binds, which is exactly what `navLint` reports.
+   * Mirrors `NavGraphReader.mergeRicher` in the IDE plugin, which has always merged this way.
+   */
   private fun richer(current: JsonObject?, candidate: JsonObject): JsonObject {
     if (current == null) return candidate
-    return if (thumbnailCount(candidate) > thumbnailCount(current)) candidate else current
+    val previews = if (thumbnailCount(candidate) > thumbnailCount(current)) {
+      candidate["previews"] ?: current["previews"]
+    } else {
+      current["previews"].takeIf { !it.isEmptyArray() } ?: candidate["previews"]
+    }
+    val merged = buildMap {
+      putAll(current)
+      candidate.forEach { (key, value) -> if (current[key].isBlankField()) put(key, value) }
+      previews?.let { put("previews", it) }
+      // A node is the start if ANY module marked it so, matching the start union below.
+      if (current.isStart() || candidate.isStart()) put("start", JsonPrimitive(true))
+    }
+    return JsonObject(merged)
   }
+
+  private fun JsonElement?.isEmptyArray(): Boolean = this is JsonArray && isEmpty()
+
+  /** Absent, JSON null, an empty string, or an empty array — i.e. a field the other copy may be able to fill. */
+  private fun JsonElement?.isBlankField(): Boolean = when {
+    this == null || this is JsonNull -> true
+    isEmptyArray() -> true
+    else -> (this as? JsonPrimitive)?.takeIf { it.isString }?.content?.isEmpty() == true
+  }
+
+  private fun JsonObject.isStart(): Boolean = this["start"]?.jsonPrimitive?.booleanOrNull == true
 
   private fun thumbnailCount(node: JsonObject): Int =
     (node["previews"] as? JsonArray).orEmptyArray().count {

@@ -51,6 +51,13 @@ public class NavGraphGradlePlugin : Plugin<Project> {
       ext.baselineFile.convention(layout.projectDirectory.file("nav/$name.nav"))
       ext.failOnNavChange.convention(true)
       ext.allowMissingBaseline.convention(false)
+      ext.lintEnabled.convention(true)
+      ext.failOnNavLint.convention(false)
+      ext.lintOnCheck.convention(false)
+      // `set`, not `convention` — see the inferNavCalls note below; an empty convention would be silently
+      // discarded the moment a consumer wrote `navLintIgnoredRoutes.add(...)`, which is the natural spelling.
+      ext.navLintDisabledRules.set(emptySet<String>())
+      ext.navLintIgnoredRoutes.set(emptySet<String>())
       ext.inferEdges.convention(true)
       ext.baselineIncludesInferred.convention(false)
       // `set`, deliberately not `convention`: Gradle's `SetProperty.add` appends to the EXPLICIT value and
@@ -638,6 +645,29 @@ public class NavGraphGradlePlugin : Plugin<Project> {
             .orElse(navgraphDir.map { it.file("nav-graph.png") }),
         )
         dependsOn(graphProducer)
+      }
+
+      // (d2a) navLint — the graph's health, where the `.nav` baseline reviews only its change. Reads the same
+      // combined graph the exports do: a cross-module route shows as a bare stub in the declaring module's own
+      // manifest, indistinguishable from a genuinely unbound route, so linting anything less would cry wolf on
+      // every dependency's screen. That input is why it is NOT in `check` by default — see `lintOnCheck`.
+      val navLint = if (ext.lintEnabled.get()) {
+        tasks.register("navLint", NavLintTask::class.java) {
+          group = "navgraph"
+          description =
+            "Reports navigation graph problems: unreachable screens, missing or duplicate start, unbound routes."
+          manifest.set(graphSourceDir.map { it.file("nav-graph.json") })
+          failOnNavLint.set(ext.failOnNavLint)
+          disabledRules.set(ext.navLintDisabledRules)
+          ignoredRoutes.set(ext.navLintIgnoredRoutes)
+          aggregated.set(aggregateTask != null)
+          dependsOn(graphProducer)
+        }
+      } else {
+        null
+      }
+      if (navLint != null && ext.lintOnCheck.get()) {
+        plugins.withId("base") { tasks.named("check") { dependsOn(navLint) } }
       }
 
       // (d2b) Mermaid export — the one artifact that needs no viewer: GitHub renders a ```mermaid block natively,
