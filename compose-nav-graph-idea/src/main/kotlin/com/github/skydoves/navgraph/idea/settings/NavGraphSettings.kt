@@ -49,6 +49,9 @@ internal class NavGraphSettings : PersistentStateComponent<NavGraphSettings> {
   /** Whether to draw the optional per-edge label. */
   var showEdgeLabels: Boolean = true
 
+  /** Whether to draw transitions the Gradle plugin inferred from navigation call sites (drawn dashed). */
+  var showInferredEdges: Boolean = true
+
   /** Edge curve style; default [CurveStyle.CURVED]. */
   var curveStyle: String = CurveStyle.CURVED.name
 

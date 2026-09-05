@@ -48,9 +48,17 @@ public abstract class NavCheckTask : DefaultTask() {
   @get:Input
   public abstract val allowMissingBaseline: Property<Boolean>
 
+  /** Must mirror [NavDumpTask.includeInferred], or every check would diff against a differently-scoped dump. */
+  @get:Input
+  public abstract val includeInferred: Property<Boolean>
+
+  init {
+    includeInferred.convention(false)
+  }
+
   @TaskAction
   public fun check() {
-    val actual = renderBaseline(parseGraph(manifest.get().asFile.readText()))
+    val actual = renderBaseline(parseGraph(manifest.get().asFile.readText()), includeInferred.get())
     val file = baseline.get().asFile
 
     if (!file.isFile) {

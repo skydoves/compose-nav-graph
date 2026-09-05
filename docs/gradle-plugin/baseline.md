@@ -101,6 +101,9 @@ navgraph {
 
     // Treat a missing baseline as a skip instead of a failure (default: false)
     allowMissingBaseline.set(false)
+
+    // Also record transitions read from your call sites (default: false)
+    baselineIncludesInferred.set(false)
 }
 ```
 
@@ -122,6 +125,22 @@ When `true`, running `navCheck` before any `.nav` file exists is a silent skip i
 navgraph {
     allowMissingBaseline.set(true)
 }
+```
+
+### `baselineIncludesInferred`
+
+The baseline records the transitions you **declared** with `@NavEdge`. The ones the plugin
+[infers from your call sites](annotations.md#inferred-transitions) are shown in the graph and the exports but stay
+out of the `.nav` file, so turning inference on never invalidates a committed baseline.
+
+Set this to `true` to hold the inferred graph to review as well. A transition disappearing from your code then fails
+`navCheck` the same way a deleted `@NavEdge` does, at the cost of one `navDump` whenever the inferred set changes.
+Inferred lines are marked, so a reviewer can still tell the two apart:
+
+```
+dest Home  start
+edge Home -> Feed
+edge Home -> Settings  (inferred)
 ```
 
 ## Multi Module Projects

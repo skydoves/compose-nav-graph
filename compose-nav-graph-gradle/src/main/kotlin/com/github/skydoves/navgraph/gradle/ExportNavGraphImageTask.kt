@@ -78,6 +78,24 @@ public abstract class ExportNavGraphImageTask : DefaultTask() {
   @get:Optional
   public abstract val scale: Property<Int>
 
+  /**
+   * The committed `.nav` baseline's contents. When set, the graph is drawn as a **diff** against it: added in
+   * green, removed as a red dashed ghost, changed in amber. Blank or unset renders the plain graph.
+   *
+   * Wired as the file's *text* rather than as an `@InputFile` because the baseline legitimately may not exist yet —
+   * the same hazard [NavCheckTask] documents — and `providers.fileContents(...)` reports that as simply absent while
+   * still tracking the content as a correct cache key.
+   */
+  @get:Input
+  @get:Optional
+  public abstract val diffBaselineText: Property<String>
+
+  /** Must mirror `navgraph { baselineIncludesInferred }`, or the diff compares against a differently-scoped
+   *  baseline and reports every inferred transition as removed. */
+  @get:Input
+  @get:Optional
+  public abstract val diffIncludesInferred: Property<Boolean>
+
   @get:OutputFile
   public abstract val outputImage: RegularFileProperty
 
@@ -85,20 +103,26 @@ public abstract class ExportNavGraphImageTask : DefaultTask() {
   public fun export() {
     val manifestFile = manifest.get().asFile
     val pkg = packageFilter.orNull.orEmpty()
-    val graph = filterGraphByPackage(parseGraph(manifestFile.readText()), pkg)
-    if (pkg.isNotBlank() && graph.nodes.isEmpty()) {
+    val extracted = filterGraphByPackage(parseGraph(manifestFile.readText()), pkg)
+    if (pkg.isNotBlank() && extracted.nodes.isEmpty()) {
       logger.warn("navgraph: no destinations under package '$pkg'; exporting an empty graph.")
     }
+    val (graph, diff) = diffBaselineText.orNull
+      ?.takeIf { it.isNotBlank() }
+      ?.let { diffAgainstBaseline(extracted, it, diffIncludesInferred.getOrElse(false), logger) }
+      ?: (extracted to null)
     val thumbsRoot: File? = thumbsDir.orNull?.asFile
     val device = parseDevice(deviceSpec.orNull)
     val s = (scale.orNull ?: DEFAULT_SCALE).coerceIn(1, 8)
 
     val out = outputImage.get().asFile
     out.parentFile?.mkdirs()
-    val img = render(graph, thumbsRoot, device, s)
+    val img = render(graph, thumbsRoot, device, s, diff)
     ImageIO.write(img, "png", out)
     logger.lifecycle(
-      "navgraph: wrote ${out.path} (${out.length() / 1024} KB) — ${graph.nodes.size} nodes, ${graph.edges.size} edges.",
+      "navgraph: wrote ${out.path} (${out.length() / 1024} KB) — ${graph.nodes.size} nodes, " +
+        "${graph.edges.size} edges" + (diff?.let { " (${it.summary()} vs the baseline)" } ?: "") +
+        ".",
     )
   }
 
@@ -122,6 +146,7 @@ public abstract class ExportNavGraphImageTask : DefaultTask() {
     thumbsRoot: File?,
     device: Pair<Int, Int>?,
     scale: Int,
+    diff: GraphDiff?,
   ): BufferedImage {
     if (graph.nodes.isEmpty()) return emptyImage(scale)
 
@@ -129,8 +154,14 @@ public abstract class ExportNavGraphImageTask : DefaultTask() {
     val thumbs: Map<String, Thumb?> = graph.nodes.associate { it.id to embed(it, thumbsRoot) }
     val laid = layout(graph, thumbs, device)
     val byId = laid.associateBy { it.node.id }
-    val contentW = laid.maxOf { it.x + it.w } + MARGIN
-    val contentH = laid.maxOf { it.y + it.h } + MARGIN
+    // The diff legend sits in a band below the graph, so every node keeps the coordinates the layout gave it —
+    // but a single-column graph is narrower than the legend, so the canvas has to widen for it too.
+    val legendH = if (diff != null) LEGEND_H else 0
+    val contentW = maxOf(
+      laid.maxOf { it.x + it.w } + MARGIN,
+      if (diff != null) MARGIN + LEGEND_W + MARGIN else 0,
+    )
+    val contentH = laid.maxOf { it.y + it.h } + MARGIN + legendH
 
     val img = BufferedImage(contentW * scale, contentH * scale, BufferedImage.TYPE_INT_ARGB)
     val g2 = img.createGraphics()
@@ -144,19 +175,44 @@ public abstract class ExportNavGraphImageTask : DefaultTask() {
       graph.edges.forEachIndexed { i, e ->
         val from = byId[e.from] ?: return@forEachIndexed
         val to = byId[e.to] ?: return@forEachIndexed
-        drawEdge(g2, from, to, srcAnchorY[i], dstAnchorY[i])
+        drawEdge(g2, e, from, to, srcAnchorY[i], dstAnchorY[i], diff?.edge(i))
       }
       drawSectionDivider(g2, graph, laid, contentW)
-      laid.forEach { drawNode(g2, it, device) }
+      laid.forEach { drawNode(g2, it, device, diff?.node(it.node.id)) }
+      if (diff != null) drawDiffLegend(g2, diff, contentH - legendH)
     } finally {
       g2.dispose()
     }
     return img
   }
 
+  /** Colour key + counts, so the PNG explains itself when it is dropped into a pull request. */
+  private fun drawDiffLegend(g2: Graphics2D, diff: GraphDiff, top: Int) {
+    g2.color = BORDER
+    g2.stroke = STROKE1
+    g2.drawLine(MARGIN, top, MARGIN + LEGEND_W, top)
+    g2.font = LABEL_FONT
+    var x = MARGIN
+    val y = top + 20
+    listOf(
+      DiffStatus.ADDED to "added",
+      DiffStatus.REMOVED to "removed",
+      DiffStatus.CHANGED to "changed",
+    ).forEach { (status, label) ->
+      g2.color = diffColor(status) ?: BORDER
+      g2.fillRect(x, y - 8, 10, 10)
+      g2.color = MUTED
+      val text = "$label ${diff.count(status)}"
+      g2.drawString(text, x + 16, y)
+      x += 16 + g2.fontMetrics.stringWidth(text) + 18
+    }
+    g2.color = MUTED
+    g2.drawString("vs the committed .nav baseline", x, y)
+  }
+
   // ── Painting — keep in sync with NavGraphCanvas.kt (drawNode/drawArg/drawEdge/paintComponent) ────────────
 
-  private fun drawNode(g2: Graphics2D, n: Laid, device: Pair<Int, Int>?) {
+  private fun drawNode(g2: Graphics2D, n: Laid, device: Pair<Int, Int>?, status: DiffStatus?) {
     val box = RoundRectangle2D.Double(
       n.x.toDouble(),
       n.y.toDouble(),
@@ -167,6 +223,11 @@ public abstract class ExportNavGraphImageTask : DefaultTask() {
     )
     g2.color = NODE_BG
     g2.fill(box)
+    // A tint behind the whole box reads at a glance in a PR screenshot, where a border alone would not.
+    diffTint(status)?.let {
+      g2.color = it
+      g2.fill(box)
+    }
 
     if (n.thumbH > 0) {
       val savedClip = g2.clip
@@ -215,8 +276,13 @@ public abstract class ExportNavGraphImageTask : DefaultTask() {
     }
 
     val highlighted = n.node.start
-    g2.color = if (highlighted) ACCENT else BORDER
-    g2.stroke = if (highlighted) STROKE2 else STROKE1
+    val diffColor = diffColor(status)
+    g2.color = diffColor ?: if (highlighted) ACCENT else BORDER
+    g2.stroke = when {
+      status == DiffStatus.REMOVED -> EDGE_STROKE_INFERRED
+      diffColor != null || highlighted -> STROKE2
+      else -> STROKE1
+    }
     g2.draw(box)
     g2.stroke = STROKE1
   }
@@ -284,7 +350,20 @@ public abstract class ExportNavGraphImageTask : DefaultTask() {
     return srcY to dstY
   }
 
-  private fun drawEdge(g2: Graphics2D, from: Laid, to: Laid, y1: Double, y2: Double) {
+  private fun drawEdge(
+    g2: Graphics2D,
+    edge: HEdge,
+    from: Laid,
+    to: Laid,
+    y1: Double,
+    y2: Double,
+    status: DiffStatus?,
+  ) {
+    // An inferred transition is drawn dashed and a touch lighter, so a call site recovered from the source is
+    // never mistaken for a declared @NavEdge. A diff status, when present, overrides the colour.
+    val dashed = edge.inferred || status == DiffStatus.REMOVED
+    val stroke = if (dashed) EDGE_STROKE_INFERRED else EDGE_STROKE
+    val color = diffColor(status) ?: if (edge.inferred) EDGE_INFERRED else EDGE
     // Same-column edges (two stacked siblings) can't use the inter-column gap, so both ends arc on the RIGHT
     // as a tight C and the head points left into the target — instead of looping across the whole box.
     if (Math.abs(from.x - to.x) < 1) {
@@ -295,8 +374,8 @@ public abstract class ExportNavGraphImageTask : DefaultTask() {
         moveTo(sx, y1)
         curveTo(sx + SAME_COL_BULGE, y1, baseX + SAME_COL_BULGE, y2, baseX, y2)
       }
-      g2.color = EDGE
-      g2.stroke = EDGE_STROKE
+      g2.color = color
+      g2.stroke = stroke
       g2.draw(path)
       g2.stroke = STROKE1
       g2.fill(arrowHead(tx, baseX, y2))
@@ -317,8 +396,8 @@ public abstract class ExportNavGraphImageTask : DefaultTask() {
       moveTo(x1, y1)
       curveTo(x1 + dir * bend, y1, baseX - dir * bend, y2, baseX, y2)
     }
-    g2.color = EDGE
-    g2.stroke = EDGE_STROKE
+    g2.color = color
+    g2.stroke = stroke
     g2.draw(path)
     g2.stroke = STROKE1
     g2.fill(arrowHead(x2, baseX, y2))
@@ -526,6 +605,35 @@ public abstract class ExportNavGraphImageTask : DefaultTask() {
     val NODE_BG = Color(0xFFFFFF) // settings.nodeFillRGB (light)
     val ACCENT = Color(0x6750A4) // settings.accentColorRGB (light)
     val EDGE = Color(0x3377D6) // settings.edgeColorRGB (light)
+
+    // The same hue as EDGE, softened — inferred, not declared.
+    val EDGE_INFERRED = Color(0x33, 0x77, 0xD6, 0xB0)
+
+    // ── Diff palette — the review colors people already read in a pull request. ──
+    val DIFF_ADDED = Color(0x1A, 0x7F, 0x37)
+    val DIFF_REMOVED = Color(0xCF, 0x22, 0x2E)
+    val DIFF_CHANGED = Color(0xBF, 0x87, 0x00)
+    val DIFF_ADDED_BG = Color(0x1A, 0x7F, 0x37, 0x1A)
+    val DIFF_REMOVED_BG = Color(0xCF, 0x22, 0x2E, 0x14)
+    val DIFF_CHANGED_BG = Color(0xBF, 0x87, 0x00, 0x1A)
+
+    /** Height of the legend band drawn under a diff render, and the width its rule + caption need. */
+    const val LEGEND_H = 34
+    const val LEGEND_W = 520
+
+    fun diffColor(status: DiffStatus?): Color? = when (status) {
+      DiffStatus.ADDED -> DIFF_ADDED
+      DiffStatus.REMOVED -> DIFF_REMOVED
+      DiffStatus.CHANGED -> DIFF_CHANGED
+      else -> null
+    }
+
+    fun diffTint(status: DiffStatus?): Color? = when (status) {
+      DiffStatus.ADDED -> DIFF_ADDED_BG
+      DiffStatus.REMOVED -> DIFF_REMOVED_BG
+      DiffStatus.CHANGED -> DIFF_CHANGED_BG
+      else -> null
+    }
     val THUMB_BG = Color(0xF1, 0xF3, 0xF5) // LightDefaults.THUMB_BG
     val BORDER = Color(0xD6, 0xD9, 0xDE) // LightDefaults.BORDER
     val TITLE = Color(0x20, 0x21, 0x24) // LightDefaults.TITLE
@@ -542,6 +650,14 @@ public abstract class ExportNavGraphImageTask : DefaultTask() {
     val STROKE1 = BasicStroke(1f)
     val STROKE2 = BasicStroke(2f)
     val EDGE_STROKE = BasicStroke(1f)
+    val EDGE_STROKE_INFERRED = BasicStroke(
+      1f,
+      BasicStroke.CAP_BUTT,
+      BasicStroke.JOIN_ROUND,
+      10f,
+      floatArrayOf(5f, 4f),
+      0f,
+    )
 
     fun applyHints(g2: Graphics2D) {
       g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)

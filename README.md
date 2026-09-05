@@ -65,7 +65,7 @@ processor for you) and install the IDE plugin:
 
 - **Annotations** (`com.github.skydoves:compose-nav-graph-annotations`): `@NavDestination`, `@NavEdge`, `@NavPreview`, and `@NavGraphRoot` describe your graph in code. Added automatically.
 - **KSP processor** (`com.github.skydoves:compose-nav-graph-ksp`): statically extracts each module's graph to `nav-graph.json` at compile time. Added automatically.
-- **Gradle plugin** (`id("com.github.skydoves.navgraph")`): renders device free Layoutlib thumbnails, merges the graph across modules, and provides the `generateNavGraph`, `navDump`, `navCheck`, and export tasks.
+- **Gradle plugin** (`id("com.github.skydoves.navgraph")`): renders device free Layoutlib thumbnails, infers the transitions KSP can't read from your navigation call sites, merges the graph across modules, and provides the `generateNavGraph`, `navDump`, `navCheck`, and export tasks.
 - **IDE plugin** (`compose-nav-graph-idea`): draws the merged flow graph and the preview gallery in the **NavGraph Graph** tool window.
 
 ### How to Install in Android Studio
@@ -112,6 +112,7 @@ plugins {
 navgraph {
     renderThumbnails.set(true)  // device free Layoutlib thumbnails (default true)
     variant.set("demoDebug")  // pin a flavor; blank auto detects the debug KSP variant
+    inferEdges.set(true)  // read transitions from your navigation call sites (default true)
     failOnNavChange.set(true)  // navCheck fails the build when the graph drifts (default true)
     galleryEnabled.set(true)  // the preview gallery pipeline (default true)
 }
@@ -147,6 +148,39 @@ Each annotation plays one role in the graph:
 
 A route can be any class. It does not need to implement `NavKey`, so an existing app (Navigation 2 routes, or even
 plain Activities referenced by `@NavEdge`) lights up without refactoring.
+
+### You don't have to annotate every transition
+
+KSP reads declarations only. It can't see inside a function body, so `entry<Home> { … backStack.add(Feed) }` is
+invisible to it, and a 40 screen app would mean writing out 80 `@NavEdge`s by hand. So the plugin also **reads your
+navigation call sites** and adds what it finds, drawn **dashed** so it's never mistaken for one you declared:
+
+```kotlin
+entryProvider {
+    entry<Home> {                                        // scope: Home
+        HomeScreen(
+            onOpenFeed = { backStack.add(Feed) },        // inferred: Home ⇢ Feed
+            onOpenSettings = { backStack.add(Settings) }  // inferred: Home ⇢ Settings
+        )
+    }
+}
+```
+
+Matching is by method name rather than by receiver, so a custom navigator (`navigator.add(SessionScreen(it))`) works
+with only the plugin applied. A reference that doesn't resolve to a route already in the graph is dropped, so
+inference never invents a destination, and an explicit `@NavEdge` always wins over an inferred duplicate — that's how
+you attach a label. Inferred transitions stay **out of the committed `.nav` baseline** by default, so switching this
+on never breaks an existing `navCheck`.
+
+```kotlin
+navgraph {
+    inferEdges.set(false)  // only what you declared
+    baselineIncludesInferred.set(true)  // review the inferred graph too
+}
+```
+
+The full guide, including what it can and can't read, lives in the
+**[Annotations documentation](https://skydoves.github.io/compose-nav-graph/gradle-plugin/annotations/)**.
 
 ### Add destinations and transitions from the IDE
 
@@ -215,6 +249,29 @@ The preview gallery exports the same way, as a browsable HTML gallery or a singl
 
 ![html previews](art/html-previews.png)
 
+### Put the graph in your README
+
+Mermaid needs no viewer at all: GitHub renders a ` ```mermaid ` block natively, so the graph can live in your README
+and be regenerated on every build instead of going stale as a checked-in screenshot.
+
+```bash
+./gradlew :app:exportNavGraphMermaid  # build/navgraph/nav-graph.mmd
+```
+
+```mermaid
+flowchart LR
+  n0["HomeScreen"]
+  n1["FeedScreen"]
+  n2["SettingsScreen"]
+  n0 -->|"open feed"| n1
+  n0 -.-> n2
+  classDef navgraphStart fill:#ede7f6,stroke:#6750a4,stroke-width:2px;
+  class n0 navgraphStart
+```
+
+Declared transitions draw solid (`-->`), inferred ones dotted (`-.->`), and the start destination gets its own class,
+so the flowchart carries the same distinctions the canvas does.
+
 ## Navigation Validation
 
 A navigation change is otherwise invisible in review: a new destination, a changed typed argument, an added or
@@ -264,6 +321,21 @@ navgraph {
 
 The full guide, including multi module baselines and CI integration, lives in the
 **[Nav Baseline documentation](https://skydoves.github.io/compose-nav-graph/gradle-plugin/baseline/)**.
+
+### Review the change as a picture
+
+The same comparison also renders. Because git already holds the baseline, "before" costs nothing:
+
+```bash
+./gradlew :app:exportNavDiffImage  # build/navgraph/nav-diff.png
+./gradlew :app:exportNavDiffHtml  # build/navgraph/nav-diff.html
+```
+
+Destinations and transitions **added** by the change are green, **removed** ones are a red dashed ghost that still
+shows the arguments they used to declare, and **changed** ones (an argument, a label) are amber, with a legend and
+counts. Attach the PNG to a pull request and the reviewer sees what the change does to navigation in one image
+instead of reconstructing it from a text diff. It is computed from the exact lines `navCheck` compares, so the
+picture and the build can never disagree.
 
 ## Kotlin Multiplatform Support
 

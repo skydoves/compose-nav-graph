@@ -17,6 +17,7 @@ package com.github.skydoves.navgraph.gradle
 
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.SetProperty
 
 /**
  * Configures the `navgraph { }` DSL. Today this drives the `.nav` baseline tasks (`navDump` / `navCheck`).
@@ -39,6 +40,38 @@ public abstract class NavGraphExtension {
 
   /** Whether a missing baseline is a skip instead of a failure (default `false`). */
   public abstract val allowMissingBaseline: Property<Boolean>
+
+  /**
+   * Whether to **infer** transitions from navigation call sites (default `true`). KSP reads declarations only — it
+   * cannot see inside `entry<Home> { … backStack.add(Feed) }` — so without this every transition has to be written
+   * out as a `@NavEdge`. With it on, the plugin scans this module's Kotlin sources, resolves each call against the
+   * routes already in the graph, and adds what it finds as `EdgeConfidence.INFERRED`: drawn dashed in the IDE and
+   * in the exports, so an inferred transition is never mistaken for a declared one.
+   *
+   * A reference that does not resolve to a known route is dropped — inference never invents a destination — and an
+   * explicit `@NavEdge` always wins over an inferred duplicate of the same transition.
+   */
+  public abstract val inferEdges: Property<Boolean>
+
+  /**
+   * Whether inferred transitions are written into the committed `.nav` baseline (default `false`).
+   *
+   * Off by default so turning [inferEdges] on never breaks an existing `navCheck`: the baseline keeps recording
+   * exactly the `@NavEdge`s you declared, while the graph and the exports show the inferred ones too. Set `true` to
+   * hold the *inferred* graph to review as well — then a transition disappearing from the code fails `navCheck`,
+   * at the cost of one `navDump` when the heuristic's result changes.
+   */
+  public abstract val baselineIncludesInferred: Property<Boolean>
+
+  /**
+   * The method names [inferEdges] treats as "this navigates" (default `add`, `addAll`, `set`, `setAll`,
+   * `navigate`, `replaceAll`, `replace`, `push`).
+   *
+   * Matching is by method name only, never by receiver, so both `backStack.add(Feed)` and a custom wrapper's
+   * `navigator.add(Feed)` are found. Add to this only if your app navigates through a differently named method;
+   * the route-set check is what keeps unrelated calls out, so a broader set is safe.
+   */
+  public abstract val inferNavCalls: SetProperty<String>
 
   /**
    * Whether to render `@NavPreview` thumbnails via the device-free **Layoutlib** renderer on Android (default

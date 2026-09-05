@@ -149,18 +149,27 @@ public abstract class AggregateNavGraphTask : DefaultTask() {
       }
     }
 
+    // Within a module inference already yields to an `@NavEdge`, but the two can arrive from DIFFERENT modules:
+    // one declares the transition, another infers the same pair from its own call site. Whole-object equality
+    // cannot dedupe those (the inferred one carries an extra `confidence` field), so the graph would draw one
+    // transition twice, solid and dashed. Declared wins, matching the single-module rule.
+    val declaredPairs = edges.filterNot {
+      it.isInferredEdge()
+    }.mapTo(mutableSetOf()) { it.endpoints() }
+    val distinctEdges = edges.filterNot { it.isInferredEdge() && it.endpoints() in declaredPairs }
+
     val merged = JsonObject(
       mapOf(
         "navVersion" to JsonPrimitive("navgraph"),
         "schemaVersion" to JsonPrimitive(1),
         "nodes" to JsonArray(nodes),
-        "edges" to JsonArray(edges.toList()),
+        "edges" to JsonArray(distinctEdges),
       ),
     )
     val out = File(outDir, manifestName)
     out.writeText(json.encodeToString(JsonElement.serializer(), merged))
     logger.lifecycle(
-      "navgraph: aggregated ${nodes.size} node(s), ${edges.size} edge(s) from " +
+      "navgraph: aggregated ${nodes.size} node(s), ${distinctEdges.size} edge(s) from " +
         "${sources.size} module(s) → ${out.path}.",
     )
   }
@@ -201,3 +210,10 @@ public abstract class AggregateNavGraphTask : DefaultTask() {
 }
 
 private fun JsonArray?.orEmptyArray(): JsonArray = this ?: JsonArray(emptyList())
+
+/** `(from, to)` of an edge object, for comparing two transitions that differ only in how they were discovered. */
+private fun JsonObject.endpoints(): Pair<String?, String?> =
+  this["from"]?.jsonPrimitive?.contentOrNull to this["to"]?.jsonPrimitive?.contentOrNull
+
+private fun JsonObject.isInferredEdge(): Boolean =
+  this["confidence"]?.jsonPrimitive?.contentOrNull == INFERRED

@@ -140,3 +140,70 @@ fun FeedScreenPreview() {
 ```
 
 Run `./gradlew :app:generateNavGraph` and this screen appears as the start node, with its rendered thumbnail and two labeled edges to `Profile` and `Settings`.
+
+## Inferred Transitions
+
+You don't have to declare every transition. By default the plugin also **reads your navigation call sites** and adds
+what it finds to the graph, so applying the plugin to an unannotated app already produces a connected flow.
+
+This exists because KSP reads declarations only. It cannot see inside a function body, so
+`entry<Home> { … backStack.add(Feed) }` is invisible to it and, without inference, every arrow in a 40 screen app
+has to be hand written. Instead, the `inferNavEdges` task scans your Kotlin sources for navigation calls inside a
+navigation scope and resolves each target against the routes already in the graph:
+
+```kotlin
+entryProvider {
+    entry<Home> {                                        // scope: Home
+        HomeScreen(
+            onOpenFeed = { backStack.add(Feed) },        // inferred: Home → Feed
+            onOpenSettings = { backStack.add(Settings) } // inferred: Home → Settings
+        )
+    }
+}
+```
+
+Two kinds of scope are read: an `entry<Route> { }` block (Navigation 3, including `entry<Route>(metadata = …) { }`)
+or a typed `composable<Route> { }` block (Navigation 2), and the body of a `@NavDestination` composable, for apps
+that pass the back stack down into the screen instead.
+
+Matching is by **method name**, never by receiver, so a custom navigator works with no configuration:
+
+```kotlin
+entry<Schedule> {
+    ScheduleScreen(onSession = { navigator.add(SessionScreen(it)) })  // inferred: Schedule → SessionScreen
+}
+```
+
+### Inferred vs declared
+
+An inferred transition is drawn **dashed** everywhere, so it is never mistaken for one you declared:
+
+| | Declared `@NavEdge` | Inferred call site |
+|---|---|---|
+| Graph, HTML, PNG | solid arrow | dashed arrow |
+| Mermaid export | `-->` | `-.->` |
+| `.nav` baseline | recorded | **not** recorded (see [`baselineIncludesInferred`](configuration.md#baselineincludesinferred)) |
+| Can carry a label | yes | no |
+
+A declared `@NavEdge` always wins over an inferred duplicate of the same transition, so adding an annotation is how
+you attach a label or override what was read.
+
+### What it can and can't read
+
+Inference is deliberately conservative: a reference that doesn't resolve to a route already in the graph is
+**dropped**, never guessed, so it can never invent a destination. Two things follow from that:
+
+- A target that isn't written literally at the call site, such as `backStack.add(route)` where `route` is a variable
+  or a function's return value, can't be recovered. Declare those with `@NavEdge`.
+- Navigation wired up outside a screen's block, such as a bottom navigation bar switching top level tabs, or an
+  `Activity` started with an `Intent`, is not attributed to a screen. Declare those with `@NavEdge` too.
+- Inference is **scoped to one module**. Each module resolves against the routes its own extraction knows: the ones
+  it declares, plus any route from another module that one of its annotations names. So in a multi module app, an
+  `entry<FeatureRoute> { }` in `:app` referencing a route `:app` never mentions in an annotation is not inferred —
+  give that one a `@NavEdge`, which also brings the route into `:app`'s graph so the rest of that screen's call
+  sites resolve. (Reading dependency modules' routes would mean depending on their build outputs, which would drag
+  every dependency's thumbnail render into `check`.)
+
+Run with `--info` to see the transitions it looked for and didn't find.
+
+Turn it off with [`inferEdges`](configuration.md#inferedges) if you want the graph to show only what you declared.

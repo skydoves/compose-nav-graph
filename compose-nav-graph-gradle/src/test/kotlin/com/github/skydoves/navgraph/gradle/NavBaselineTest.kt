@@ -105,4 +105,61 @@ class NavBaselineTest {
   fun emptyGraphRendersOnlyHeader() {
     assertEquals(emptyList<String>(), baselineContent(renderBaseline(HGraph())))
   }
+
+  @Test
+  fun inferredEdgesStayOutOfTheBaselineByDefault() {
+    // The upgrade contract: switching edge inference on must not move a single line of a committed baseline.
+    val graph = HGraph(
+      nodes = listOf(HNode(id = "x.A", route = "A"), HNode(id = "x.B", route = "B")),
+      edges = listOf(
+        HEdge(from = "x.A", to = "x.B", label = "declared"),
+        HEdge(from = "x.B", to = "x.A", confidence = INFERRED),
+      ),
+    )
+    assertEquals(
+      listOf("dest A", "dest B", "edge A -> B  \"declared\""),
+      baselineContent(renderBaseline(graph)),
+    )
+  }
+
+  @Test
+  fun inferredEdgesAreMarkedWhenOptedIn() {
+    val graph = HGraph(
+      nodes = listOf(HNode(id = "x.A", route = "A"), HNode(id = "x.B", route = "B")),
+      edges = listOf(
+        HEdge(from = "x.A", to = "x.B", label = "declared"),
+        HEdge(from = "x.B", to = "x.A", confidence = INFERRED),
+      ),
+    )
+    assertEquals(
+      listOf("dest A", "dest B", "edge A -> B  \"declared\"", "edge B -> A  (inferred)"),
+      baselineContent(renderBaseline(graph, includeInferred = true)),
+    )
+  }
+
+  @Test
+  fun anUnknownConfidenceFromANewerManifestIsNotTreatedAsInferred() {
+    val graph = HGraph(
+      nodes = listOf(HNode(id = "x.A", route = "A"), HNode(id = "x.B", route = "B")),
+      edges = listOf(HEdge(from = "x.A", to = "x.B", confidence = "RUNTIME")),
+    )
+    assertTrue("edge A -> B" in baselineContent(renderBaseline(graph)))
+  }
+
+  @Test
+  fun parsesConfidenceFromTheManifest() {
+    val manifest = """
+      {
+        "navVersion": "navgraph",
+        "schemaVersion": 1,
+        "nodes": [{ "id": "x.A", "route": "A" }, { "id": "x.B", "route": "B" }],
+        "edges": [
+          { "from": "x.A", "to": "x.B" },
+          { "from": "x.B", "to": "x.A", "confidence": "INFERRED" }
+        ]
+      }
+    """.trimIndent()
+    val edges = parseGraph(manifest).edges
+    assertEquals(listOf(false, true), edges.map { it.inferred })
+  }
 }

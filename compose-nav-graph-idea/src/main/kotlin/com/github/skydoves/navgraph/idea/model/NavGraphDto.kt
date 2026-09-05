@@ -61,5 +61,11 @@ internal data class NavEdgeDto(
   val to: String = "",
   val args: List<String> = emptyList(),
   val label: String? = null,
-  val confidence: String = "ANNOTATED",
+  val confidence: String = ANNOTATED,
 )
+
+/** From an explicit `@NavEdge`. */
+internal const val ANNOTATED: String = "ANNOTATED"
+
+/** Statically inferred from a navigation call site the Gradle plugin read out of the sources; drawn dashed. */
+internal const val INFERRED: String = "INFERRED"

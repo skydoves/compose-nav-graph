@@ -74,6 +74,22 @@ internal class NavGraphTheme(private val settings: NavGraphSettings) {
   // Strokes
   val edgeStroke: BasicStroke get() = BasicStroke(settings.edgeThickness)
 
+  /** Dashed at whatever thickness the user picked — marks an edge inferred from a call site, not declared with
+   *  `@NavEdge`. The dash lengths scale with the thickness so a thick edge still reads as dashed. */
+  val inferredEdgeStroke: BasicStroke get() = BasicStroke(
+    settings.edgeThickness,
+    BasicStroke.CAP_BUTT,
+    BasicStroke.JOIN_ROUND,
+    10f,
+    // Floored: BasicStroke rejects an all-zero dash array, and a hand-edited settings file can carry a 0
+    // thickness that the spinner (min 0.5) would never produce — which would throw for the whole canvas.
+    floatArrayOf(
+      (settings.edgeThickness * 4f).coerceAtLeast(1f),
+      (settings.edgeThickness * 3f).coerceAtLeast(1f),
+    ),
+    0f,
+  )
+
   // Geometry
   val boxW: Int get() = settings.nodeWidth
   val arc: Double get() = settings.cornerRadius.toDouble()
@@ -85,6 +101,7 @@ internal class NavGraphTheme(private val settings: NavGraphSettings) {
   val showArgs: Boolean get() = settings.showArgs
   val emphasizeStart: Boolean get() = settings.emphasizeStart
   val showEdgeLabels: Boolean get() = settings.showEdgeLabels
+  val showInferredEdges: Boolean get() = settings.showInferredEdges
   val curveStyle: CurveStyle get() = settings.curveStyle.toEnumOr(CurveStyle.CURVED)
   val direction: Direction get() = settings.direction.toEnumOr(Direction.LEFT_RIGHT)
 

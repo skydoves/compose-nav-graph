@@ -21,6 +21,7 @@ import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -40,6 +41,28 @@ class NavGraphPluginTest {
     assertEquals(RenderBackend.AUTO, ext.renderBackend.get())
     assertEquals("", ext.variant.get())
     assertTrue(ext.autoDependencies.get())
+    // Inference is on out of the box, but stays out of the committed baseline so an upgrade can't break navCheck.
+    assertTrue(ext.inferEdges.get())
+    assertFalse(ext.baselineIncludesInferred.get())
+    assertEquals(KotlinNavScanner.DEFAULT_NAV_CALLS, ext.inferNavCalls.get())
+  }
+
+  @Test
+  fun addingANavCallKeepsTheDefaults() {
+    // `inferNavCalls` is seeded with `set`, not `convention`: Gradle's `add` appends to the explicit value and
+    // DISCARDS a convention, so on a convention-only property this would leave `{openScreen}` alone and quietly
+    // switch every ordinary call site (`backStack.add`, `navigate`, …) off.
+    val ext = navgraphProject().extensions.getByType(NavGraphExtension::class.java)
+    ext.inferNavCalls.add("openScreen")
+    assertTrue(ext.inferNavCalls.get().containsAll(KotlinNavScanner.DEFAULT_NAV_CALLS))
+    assertTrue(ext.inferNavCalls.get().contains("openScreen"))
+  }
+
+  @Test
+  fun settingNavCallsStillReplacesTheDefaults() {
+    val ext = navgraphProject().extensions.getByType(NavGraphExtension::class.java)
+    ext.inferNavCalls.set(setOf("openScreen"))
+    assertEquals(setOf("openScreen"), ext.inferNavCalls.get())
   }
 
   @Test
@@ -65,7 +88,86 @@ class NavGraphPluginTest {
     assertNotNull(project.tasks.findByName("navCheck"))
     assertNotNull(project.tasks.findByName("exportNavGraphHtml"))
     assertNotNull(project.tasks.findByName("exportNavGraphImage"))
+    assertNotNull(project.tasks.findByName("inferNavEdges"))
     assertEquals("navgraph", project.tasks.getByName("generateNavGraph").group)
+  }
+
+  @Test
+  fun inferNavEdgesIsNotRegisteredWhenInferenceIsOff() {
+    val project = ProjectBuilder.builder().withName("sample").build()
+    project.pluginManager.apply("com.github.skydoves.navgraph")
+    val ext = project.extensions.getByType(NavGraphExtension::class.java)
+    ext.renderThumbnails.set(false)
+    ext.autoDependencies.set(false)
+    ext.inferEdges.set(false)
+    (project as ProjectInternal).evaluate()
+
+    assertNull(project.tasks.findByName("inferNavEdges"))
+    assertNotNull(project.tasks.findByName("mergeNavGraph"))
+  }
+
+  @Test
+  fun inferNavEdgesAddsCallSiteTransitionsAndKeepsAnnotatedOnes() {
+    val project = ProjectBuilder.builder().build()
+    val task = project.tasks.register("inferNavEdges", InferNavEdgesTask::class.java).get()
+    task.kspManifest.set(writeManifest(project, MANIFEST))
+    task.sources.from(
+      project.layout.projectDirectory.file("src/main/kotlin/Nav.kt").asFile.apply {
+        parentFile.mkdirs()
+        writeText(
+          """
+          package x
+          fun App() {
+            entryProvider {
+              entry<Home> { HomeScreen(onOpen = { backStack.add(Profile) }) }
+              entry<Profile> { ProfileScreen(onBack = { backStack.add(Home) }) }
+            }
+          }
+          """.trimIndent(),
+        )
+      },
+    )
+    val out = project.layout.buildDirectory.file("out/nav-graph-inferred.json").get().asFile
+    task.outputManifest.set(out)
+    task.infer()
+
+    val edges = parseGraph(out.readText()).edges
+    // Home → Profile is already a @NavEdge, so it stays ANNOTATED (with its label); only Profile → Home is added.
+    assertEquals(
+      listOf(Triple("x.Home", "x.Profile", false), Triple("x.Profile", "x.Home", true)),
+      edges.map { Triple(it.from, it.to, it.inferred) },
+    )
+    assertEquals("go", edges.first().label)
+  }
+
+  @Test
+  fun inferNavEdgesNeverInventsADestination() {
+    val project = ProjectBuilder.builder().build()
+    val task = project.tasks.register("inferNavEdges", InferNavEdgesTask::class.java).get()
+    task.kspManifest.set(writeManifest(project, MANIFEST))
+    task.sources.from(
+      project.layout.projectDirectory.file("src/main/kotlin/Nav.kt").asFile.apply {
+        parentFile.mkdirs()
+        writeText(
+          """
+          package x
+          fun App() {
+            entry<Home> {
+              backStack.add(NotARouteAnywhere)
+              basket.add(Item("apple"))
+            }
+          }
+          """.trimIndent(),
+        )
+      },
+    )
+    val out = project.layout.buildDirectory.file("out/nav-graph-inferred.json").get().asFile
+    task.outputManifest.set(out)
+    task.infer()
+
+    val graph = parseGraph(out.readText())
+    assertEquals(listOf("x.Home", "x.Profile"), graph.nodes.map { it.id })
+    assertEquals(1, graph.edges.size)
   }
 
   @Test

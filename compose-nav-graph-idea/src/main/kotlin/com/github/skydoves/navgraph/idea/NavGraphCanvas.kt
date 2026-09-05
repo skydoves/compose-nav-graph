@@ -15,6 +15,7 @@
  */
 package com.github.skydoves.navgraph.idea
 
+import com.github.skydoves.navgraph.idea.model.INFERRED
 import com.github.skydoves.navgraph.idea.model.NavArgDto
 import com.github.skydoves.navgraph.idea.model.NavEdgeDto
 import com.github.skydoves.navgraph.idea.model.NavGraphDto
@@ -319,7 +320,10 @@ internal class NavGraphCanvas(
     val graph = lastGraph ?: return
     laid = layout(graph, lastThumbs)
     byId = laid.associateBy { it.node.id }
-    edges = graph.edges
+    // The layout (BFS lanes from the start node) reads graph.edges directly, so hiding inferred edges here only
+    // hides the arrows — node placement stays put whether the toggle is on or off.
+    edges =
+      if (theme.showInferredEdges) graph.edges else graph.edges.filter { it.confidence != INFERRED }
     hoverId = null
   }
 
@@ -744,7 +748,7 @@ internal class NavGraphCanvas(
         }
       }
       g2.color = theme.edge
-      g2.stroke = theme.edgeStroke
+      g2.stroke = strokeFor(e)
       g2.draw(path)
       g2.stroke = STROKE1
       g2.fill(arrowHead(tx, baseX, y2))
@@ -771,11 +775,18 @@ internal class NavGraphCanvas(
       }
     }
     g2.color = theme.edge
-    g2.stroke = theme.edgeStroke
+    g2.stroke = strokeFor(e)
     g2.draw(path)
     g2.stroke = STROKE1
     g2.fill(arrowHead(x2, baseX, y2))
   }
+
+  /**
+   * Dashed for a transition inferred from a navigation call site, solid for a declared `@NavEdge` — so an
+   * inferred edge is never mistaken for one the developer wrote.
+   */
+  private fun strokeFor(e: NavEdgeDto): BasicStroke =
+    if (e.confidence == INFERRED) theme.inferredEdgeStroke else theme.edgeStroke
 
   /**
    * Filled triangular arrowhead with its tip at [tipX] and base at [baseX] (either side),
@@ -861,7 +872,10 @@ internal class NavGraphCanvas(
    */
   private fun drawSectionDivider(g2: Graphics2D) {
     val touched = HashSet<String>()
-    edges.forEach {
+    // The FULL edge set, matching what `layout` used — not the drawn subset. Hiding inferred edges must not move
+    // the divider, or a screen reached only by an inferred transition would be laid out inside the flow while
+    // counting as unconnected, dropping the line into the middle of the graph.
+    (lastGraph?.edges ?: edges).forEach {
       touched.add(it.from)
       touched.add(it.to)
     }
