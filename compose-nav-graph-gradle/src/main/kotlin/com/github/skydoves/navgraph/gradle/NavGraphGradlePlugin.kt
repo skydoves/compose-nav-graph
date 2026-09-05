@@ -24,6 +24,7 @@ import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier
 import org.gradle.api.attributes.Attribute
 import org.gradle.api.file.Directory
+import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.provider.Provider
@@ -50,6 +51,13 @@ public class NavGraphGradlePlugin : Plugin<Project> {
       ext.baselineFile.convention(layout.projectDirectory.file("nav/$name.nav"))
       ext.failOnNavChange.convention(true)
       ext.allowMissingBaseline.convention(false)
+      ext.inferEdges.convention(true)
+      ext.baselineIncludesInferred.convention(false)
+      // `set`, deliberately not `convention`: Gradle's `SetProperty.add` appends to the EXPLICIT value and
+      // discards a convention, so `inferNavCalls.add("openScreen")` on a convention-only property would silently
+      // leave `{openScreen}` and switch every ordinary call site off. Seeding an explicit value makes `add` mean
+      // "also match this", which is what the DSL reads like, while a user's own `set(…)` still replaces it.
+      ext.inferNavCalls.set(KotlinNavScanner.DEFAULT_NAV_CALLS)
       ext.renderThumbnails.convention(true)
       ext.renderBackend.convention(RenderBackend.AUTO)
       ext.robolectricApplication.convention("")
@@ -483,12 +491,58 @@ public class NavGraphGradlePlugin : Plugin<Project> {
       val renderRobolectric = roboAnchors["nav"]
       val renderGalleryRobolectric = roboAnchors["gallery"]
 
-      // (b) Merge the KSP manifest (+ thumbnails, when rendered) into the consumed manifest.
+      // Each dependency module's published nav-graph dir, re-selected off the already-resolved runtime classpath (so
+      // Android variant attributes stay correct) and leniently skipping deps that produce none (JaCoCo-style).
+      val depGraphDirs = if (ext.aggregate.get() && !kmp && variant != null) {
+        configurations.findByName("${variant}RuntimeClasspath")?.incoming?.artifactView {
+          withVariantReselection()
+          lenient(true)
+          componentFilter { it is ProjectComponentIdentifier }
+          attributes.attribute(NAVGRAPH_GRAPH_ATTRIBUTE, NAVGRAPH_GRAPH_VALUE)
+        }?.files
+      } else {
+        null
+      }
+
+      // (a2) Infer the transitions KSP cannot see (it reads declarations only, never `entry<T>{}`/`backStack.add`
+      // bodies) by scanning this module's Kotlin sources, and enrich the manifest with them as INFERRED edges.
+      //
+      // Resolves against THIS module's routes only, deliberately. Reading the dependency modules' routes would mean
+      // an artifact view over the runtime classpath, and such a view carries the build dependencies of everything
+      // those modules publish — including the nav-graph dir built by `mergeNavGraph`. Since `navCheck` is wired
+      // into `check`, that quietly pulled every dependency's thumbnail render, and with it that module's AGP
+      // unit-test task, which the render's `whenReady` hook then filters down to the render test alone: a module's
+      // real unit tests would stop running, and CI would go green with them broken. Inference is a convenience;
+      // it does not get to break `check` for it.
+      val infer = if (ext.inferEdges.get()) {
+        tasks.register("inferNavEdges", InferNavEdgesTask::class.java) {
+          group = "navgraph"
+          description =
+            "Infers transitions from navigation call sites that KSP cannot read."
+          this.kspManifest.set(kspManifestFile)
+          sources.from(kotlinSourceDirs(project))
+          navCalls.set(ext.inferNavCalls)
+          outputManifest.set(navgraphDir.map { it.file("nav-graph-inferred.json") })
+          dependsOn(kspTask)
+        }
+      } else {
+        null
+      }
+      // What every EDGE consumer reads: the KSP manifest enriched with inferred edges, or the raw one when inference
+      // is off. The render tasks deliberately keep reading the raw manifest — they only need the preview list.
+      val edgeManifest = if (infer != null) {
+        navgraphDir.map { it.file("nav-graph-inferred.json") }
+      } else {
+        kspManifestFile
+      }
+      val edgeManifestProducer: Any = infer ?: kspTask
+
+      // (b) Merge the manifest (+ thumbnails, when rendered) into the consumed manifest.
       val merge = tasks.register("mergeNavGraph", MergeNavGraphTask::class.java) {
-        this.kspManifest.set(kspManifestFile)
+        this.kspManifest.set(edgeManifest)
         if (doRender || doRobolectric) previewIndex.set(previewIndexFile)
         outputManifest.set(navgraphDir.map { it.file("nav-graph.json") })
-        dependsOn(kspTask)
+        dependsOn(edgeManifestProducer)
         if (renderLayoutlib != null) dependsOn(renderLayoutlib)
         if (renderRobolectric != null) dependsOn(renderRobolectric)
       }
@@ -524,21 +578,8 @@ public class NavGraphGradlePlugin : Plugin<Project> {
       // the owning module. An umbrella (:app, on every feature) thus gets the whole app's
       // graph; a single-module app just gets its own. Plain-Android only; skipped gracefully
       // (own graph) when the variant has no runtime classpath.
-      val runtimeClasspath = if (ext.aggregate.get() && !kmp && variant != null) {
-        configurations.findByName("${variant}RuntimeClasspath")
-      } else {
-        null
-      }
       val aggregatedDir = layout.buildDirectory.dir("navgraph-aggregated")
-      val aggregateTask = if (runtimeClasspath != null) {
-        // Re-select each dependency's navgraph graph artifact off the already-resolved runtime classpath (so Android
-        // variant attributes stay correct), leniently skipping deps that produce no nav graph (JaCoCo-style).
-        val depGraphDirs = runtimeClasspath.incoming.artifactView {
-          withVariantReselection()
-          lenient(true)
-          componentFilter { it is ProjectComponentIdentifier }
-          attributes.attribute(NAVGRAPH_GRAPH_ATTRIBUTE, NAVGRAPH_GRAPH_VALUE)
-        }.files
+      val aggregateTask = if (depGraphDirs != null) {
         tasks.register("aggregateNavGraph", AggregateNavGraphTask::class.java) {
           group = "navgraph"
           description =
@@ -597,6 +638,82 @@ public class NavGraphGradlePlugin : Plugin<Project> {
             .orElse(navgraphDir.map { it.file("nav-graph.png") }),
         )
         dependsOn(graphProducer)
+      }
+
+      // (d2b) Mermaid export — the one artifact that needs no viewer: GitHub renders a ```mermaid block natively,
+      // so the graph can live in the README and be regenerated on every build instead of going stale.
+      tasks.register("exportNavGraphMermaid", ExportNavGraphMermaidTask::class.java) {
+        group = "navgraph"
+        description =
+          "Writes build/navgraph/nav-graph.mmd — a Mermaid flowchart GitHub markdown renders natively."
+        manifest.set(graphSourceDir.map { it.file("nav-graph.json") })
+        packageFilter.set(providers.gradleProperty("navgraph.export.package").orElse(""))
+        direction.set(providers.gradleProperty("navgraph.export.direction").orElse("LR"))
+        markdown.set(
+          providers.gradleProperty("navgraph.export.mermaid.markdown").map {
+            it.toBoolean()
+          },
+        )
+        outputFile.set(
+          layout.file(providers.gradleProperty("navgraph.export.mermaid.out").map { File(it) })
+            .orElse(navgraphDir.map { it.file("nav-graph.mmd") }),
+        )
+        dependsOn(graphProducer)
+      }
+
+      // (d3) Visual navDiff: the same two renderers, pointed at the committed `.nav` baseline. Because git already
+      // holds that baseline, "before" costs nothing — and the picture is computed from the exact lines navCheck
+      // compares, so a pull request can never show a clean diff while the build fails on drift.
+      // `-Pnavgraph.diff.base=<path.nav>` compares against a different baseline (e.g. one restored from CI).
+      // fileContents() reads it as an optional value, so a project that has not run navDump yet still exports.
+      // Resolved to a RegularFile here rather than chained lazily: `providers.fileContents(layout.file(provider))`
+      // serializes a provider that reaches for ProjectLayout, which is not available when the configuration cache
+      // is loaded back, and both diff tasks then fail to even start.
+      val diffBaselineFile = providers.gradleProperty("navgraph.diff.base").orNull
+        ?.let { layout.projectDirectory.file(it) }
+        ?: ext.baselineFile.get()
+      val diffBaseline = providers.fileContents(diffBaselineFile).asText
+
+      // Both read this module's OWN merged graph, never the aggregated one, and neither takes a package filter.
+      // The `.nav` baseline records exactly what `navDump` dumps — this module's destinations — so diffing an
+      // aggregated or filtered graph against it would paint every dependency module's screen "added" forever, on a
+      // repo where nothing changed. Same manifest as navCheck ⇒ the picture and the build always agree.
+      tasks.register("exportNavDiffHtml", ExportNavGraphHtmlTask::class.java) {
+        group = "navgraph"
+        description =
+          "Renders build/navgraph/nav-diff.html — the flow graph coloured against the .nav baseline."
+        manifest.set(navgraphDir.map { it.file("nav-graph.json") })
+        // Only when something actually renders. `build/navgraph/thumbs` is created by the render task, so in
+        // structure-only mode (`renderThumbnails = false`) pointing at it fails Gradle's input validation before
+        // the task can start. The sibling exports read the aggregated dir, which is always created, and so never
+        // hit this; `thumbsDir` is @Optional precisely so it can be left unset here.
+        if (doRender || doRobolectric) this.thumbsDir.set(navgraphDir.map { it.dir("thumbs") })
+        deviceSpec.set(providers.gradleProperty("navgraph.export.device").orElse(""))
+        diffBaselineText.set(diffBaseline)
+        diffIncludesInferred.set(ext.baselineIncludesInferred)
+        outputHtml.set(
+          layout.file(providers.gradleProperty("navgraph.diff.html.out").map { File(it) })
+            .orElse(navgraphDir.map { it.file("nav-diff.html") }),
+        )
+        dependsOn(merge)
+      }
+
+      tasks.register("exportNavDiffImage", ExportNavGraphImageTask::class.java) {
+        group = "navgraph"
+        description =
+          "Renders build/navgraph/nav-diff.png — a review image of what this change does to navigation."
+        manifest.set(navgraphDir.map { it.file("nav-graph.json") })
+        // See exportNavDiffHtml: unset in structure-only mode, or the task fails input validation.
+        if (doRender || doRobolectric) this.thumbsDir.set(navgraphDir.map { it.dir("thumbs") })
+        deviceSpec.set(providers.gradleProperty("navgraph.export.device").orElse(""))
+        scale.set(providers.gradleProperty("navgraph.export.scale").map { it.toInt() })
+        diffBaselineText.set(diffBaseline)
+        diffIncludesInferred.set(ext.baselineIncludesInferred)
+        outputImage.set(
+          layout.file(providers.gradleProperty("navgraph.diff.image.out").map { File(it) })
+            .orElse(navgraphDir.map { it.file("nav-diff.png") }),
+        )
+        dependsOn(merge)
       }
 
       // (gallery) Publish + aggregate + export the preview gallery, mirroring the nav-graph pipeline but on
@@ -679,22 +796,24 @@ public class NavGraphGradlePlugin : Plugin<Project> {
         }
       }
 
-      // (e) Navigation baseline (.nav) — reads the KSP manifest directly (structure only, render-free).
+      // (e) Navigation baseline (.nav) — reads the extracted manifest directly (structure only, render-free).
       tasks.register("navDump", NavDumpTask::class.java) {
         group = "navgraph"
         description = "Writes the committed nav baseline (.nav) from the current graph."
-        manifest.set(kspManifestFile)
+        manifest.set(edgeManifest)
         baseline.set(ext.baselineFile)
-        dependsOn(kspTask)
+        includeInferred.set(ext.baselineIncludesInferred)
+        dependsOn(edgeManifestProducer)
       }
       val navCheck = tasks.register("navCheck", NavCheckTask::class.java) {
         group = "navgraph"
         description = "Fails if the navigation graph drifted from the committed .nav baseline."
-        manifest.set(kspManifestFile)
+        manifest.set(edgeManifest)
         baseline.set(ext.baselineFile)
+        includeInferred.set(ext.baselineIncludesInferred)
         failOnNavChange.set(ext.failOnNavChange)
         allowMissingBaseline.set(ext.allowMissingBaseline)
-        dependsOn(kspTask)
+        dependsOn(edgeManifestProducer)
       }
       // Gate `check` on the baseline (Android app/library + KMP all apply the `base` plugin → `check` exists).
       plugins.withId("base") { tasks.named("check") { dependsOn(navCheck) } }
@@ -1053,6 +1172,55 @@ public class NavGraphGradlePlugin : Plugin<Project> {
     }
   }
 
+  /**
+   * This module's own Kotlin sources — `main` on Android, `commonMain`/`androidMain`/… on KMP — read reflectively
+   * off `kotlin { sourceSets }` (no KGP compile dependency, mirroring [addKotlinSrcDir]). Test source sets and
+   * anything under the build directory are excluded: edge inference should describe the app's navigation, not its
+   * tests or its own generated code.
+   *
+   * Falls back to scanning the module's `src` directory when the reflective read fails, so a future KGP shape can
+   * never silently turn inference off.
+   */
+  @Suppress("UNCHECKED_CAST")
+  private fun kotlinSourceDirs(project: Project): FileCollection {
+    // Trailing separator so a sibling directory like `<project>/buildsomething/` isn't mistaken for build output.
+    val buildDir = project.layout.buildDirectory.get().asFile.absolutePath + File.separator
+    val kotlin = project.extensions.findByName("kotlin")
+    val roots = kotlin?.let { extension ->
+      runCatching {
+        val sourceSets = extension.javaClass.getMethod("getSourceSets")
+          .invoke(extension) as NamedDomainObjectCollection<Any>
+        sourceSets.names
+          // `test`, `androidTest`, `commonTest`, `androidUnitTest`, and AGP's per-variant `testDebug` /
+          // `androidTestDebug` — but NOT a feature set named `latestMain`, which contains a lowercase `test`
+          // yet neither starts with it nor carries the capitalised form.
+          .filterNot { name -> name.startsWith("test") || "Test" in name }
+          .mapNotNull(sourceSets::findByName)
+          .flatMap { set ->
+            (set.javaClass.getMethod("getKotlin").invoke(set) as SourceDirectorySet).srcDirs
+          }
+      }.getOrElse {
+        project.logger.info(
+          "navgraph: could not read Kotlin source sets (${it.message}); scanning the src directory instead.",
+        )
+        null
+      }
+    }
+    val declared = roots?.takeIf { it.isNotEmpty() }
+    val dirs = declared ?: listOf(project.file("src"))
+    return project.files(
+      dirs.distinct()
+        .filterNot { (it.absolutePath + File.separator).startsWith(buildDir) }
+        .map { dir ->
+          project.fileTree(dir) {
+            include(KOTLIN_SOURCES)
+            // Only the fallback root spans whole source sets, so it is the only one that can pick up tests.
+            if (declared == null) exclude(TEST_SOURCE_DIRS)
+          }
+        },
+    )
+  }
+
   /** Add [dir] as a Kotlin source root of the first existing source set among [sourceSetNames] via the
    *  `kotlin { sourceSets }` DSL, read reflectively (no KGP compile dependency) — the generated render test then
    *  compiles into that compilation's output, which the mirrored `Test` task scans. Candidates are tried in order
@@ -1242,6 +1410,14 @@ public class NavGraphGradlePlugin : Plugin<Project> {
       "androidMainImplementation",
       "androidMainApi",
     )
+
+    // Edge inference reads Kotlin sources only; the test excludes apply solely to the whole-`src` fallback root,
+    // since the declared source-set roots are already filtered by name.
+    const val KOTLIN_SOURCES = "**/*.kt"
+
+    // `test*/` covers `test`, `testDebug`, `testDemoRelease`; `*Test*/` covers `androidTest`, `commonTest`,
+    // `androidUnitTestDebug`. Neither matches `latestMain` (no leading `test`, no capitalised `Test`).
+    val TEST_SOURCE_DIRS = listOf("test*/**", "*Test*/**")
 
     // KMP without Android: the common-metadata KSP pass, structure only, no render.
     const val KMP_KSP_TASK = "kspCommonMainKotlinMetadata"

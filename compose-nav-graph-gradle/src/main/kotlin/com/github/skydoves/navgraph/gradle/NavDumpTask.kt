@@ -17,6 +17,8 @@ package com.github.skydoves.navgraph.gradle
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
@@ -24,8 +26,8 @@ import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 
 /**
- * Writes the committed `.nav` baseline from the current KSP manifest — a flat, deterministic, structure-only
- * snapshot of the nav graph (destinations + typed args + transitions). Reads the KSP manifest directly, so it
+ * Writes the committed `.nav` baseline from the current extracted manifest — a flat, deterministic, structure-only
+ * snapshot of the nav graph (destinations + typed args + transitions). Reads the manifest directly, so it
  * does NOT need the render/merge. Commit the output; [NavCheckTask] verifies it.
  */
 public abstract class NavDumpTask : DefaultTask() {
@@ -34,17 +36,26 @@ public abstract class NavDumpTask : DefaultTask() {
   @get:PathSensitive(PathSensitivity.RELATIVE)
   public abstract val manifest: RegularFileProperty
 
+  /** Whether inferred transitions are recorded too (`navgraph { baselineIncludesInferred }`, default `false`). */
+  @get:Input
+  public abstract val includeInferred: Property<Boolean>
+
   @get:OutputFile
   public abstract val baseline: RegularFileProperty
+
+  init {
+    includeInferred.convention(false)
+  }
 
   @TaskAction
   public fun dump() {
     val graph = parseGraph(manifest.get().asFile.readText())
     val out = baseline.get().asFile
     out.parentFile?.mkdirs()
-    out.writeText(renderBaseline(graph))
+    out.writeText(renderBaseline(graph, includeInferred.get()))
+    val recorded = graph.edges.count { includeInferred.get() || !it.inferred }
     logger.lifecycle(
-      "navgraph: wrote baseline ${out.path} — ${graph.nodes.size} destinations, ${graph.edges.size} edges.",
+      "navgraph: wrote baseline ${out.path} — ${graph.nodes.size} destinations, $recorded edges.",
     )
   }
 }

@@ -30,6 +30,13 @@
   --arg-type: #188038;
   --muted: #80868b;
   --edge: #3377d6;
+  /* Diff palette — the review colours people already read in a pull request. */
+  --diff-added: #1a7f37;
+  --diff-removed: #cf222e;
+  --diff-changed: #bf8700;
+  --diff-added-bg: #1a7f371a;
+  --diff-removed-bg: #cf222e14;
+  --diff-changed-bg: #bf87001a;
   --shadow: 0 1px 2px #0000000d, 0 4px 14px #0000000a;
   --shadow-hi: 0 2px 6px #6750a426, 0 10px 28px #6750a41f;
   --row-hover: #6750a40d;
@@ -52,6 +59,12 @@
     --arg-type: #6fbf73;
     --muted: #8c8c8c;
     --edge: #5a9be6;
+    --diff-added: #4ac26b;
+    --diff-removed: #ff6b74;
+    --diff-changed: #e3b341;
+    --diff-added-bg: #4ac26b1f;
+    --diff-removed-bg: #ff6b7419;
+    --diff-changed-bg: #e3b3411f;
     --shadow: 0 1px 2px #00000040, 0 4px 14px #00000038;
     --shadow-hi: 0 2px 6px #9a82db40, 0 10px 28px #00000052;
     --row-hover: #9a82db1a;
@@ -162,6 +175,16 @@ body {
   white-space: nowrap;
 }
 .legend b { color: var(--accent); font-weight: 700; }
+/* Diff counts, shown only when the page was exported against a .nav baseline. */
+.legend .chip {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  border: 1px solid currentColor;
+}
+.legend .chip.added { color: var(--diff-added); }
+.legend .chip.removed { color: var(--diff-removed); }
+.legend .chip.changed { color: var(--diff-changed); }
 
 /* ─── Stage (pan / zoom viewport) ─────────────────────────────────────── */
 #stage {
@@ -193,6 +216,9 @@ svg.edges {
 }
 .edge { fill: none; stroke: var(--edge); stroke-width: 1.5; opacity: .9; transition: opacity .15s; }
 .edge-head { fill: var(--edge); opacity: .9; transition: opacity .15s; }
+/* Inferred from a navigation call site rather than declared with @NavEdge. */
+.edge.inferred { stroke-dasharray: 6 4; opacity: .62; }
+.edge-head.inferred { opacity: .62; }
 .edge-label {
   fill: var(--muted);
   font-size: 11px;
@@ -217,6 +243,21 @@ svg.edges {
 .node.start { border: 2px solid var(--accent); }
 .node:hover, .node.hl { border-color: var(--accent); box-shadow: var(--shadow-hi); }
 .node.traced { border-color: var(--accent); }
+
+/* Diff states — a review colour on the border plus a tint, so the change reads even in a screenshot. */
+.node.added { border: 2px solid var(--diff-added); background: var(--diff-added-bg); }
+.node.changed { border: 2px solid var(--diff-changed); background: var(--diff-changed-bg); }
+.node.removed {
+  border: 2px dashed var(--diff-removed);
+  background: var(--diff-removed-bg);
+  opacity: .82;
+}
+.edge.added { stroke: var(--diff-added); }
+.edge-head.added { fill: var(--diff-added); }
+.edge.changed { stroke: var(--diff-changed); }
+.edge-head.changed { fill: var(--diff-changed); }
+.edge.removed { stroke: var(--diff-removed); stroke-dasharray: 6 4; }
+.edge-head.removed { fill: var(--diff-removed); }
 
 .node .thumb {
   position: relative;

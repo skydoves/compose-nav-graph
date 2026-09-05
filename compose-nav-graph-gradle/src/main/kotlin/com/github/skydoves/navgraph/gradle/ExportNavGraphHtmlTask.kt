@@ -67,6 +67,24 @@ public abstract class ExportNavGraphHtmlTask : DefaultTask() {
   @get:Optional
   public abstract val packageFilter: Property<String>
 
+  /**
+   * The committed `.nav` baseline's contents. When set, the page is rendered as a **diff** against it: added in
+   * green, removed as a red dashed ghost, changed in amber. Blank or unset renders the plain graph.
+   *
+   * Wired as the file's *text* rather than as an `@InputFile` because the baseline legitimately may not exist yet —
+   * the same hazard [NavCheckTask] documents — and `providers.fileContents(...)` reports that as simply absent while
+   * still tracking the content as a correct cache key.
+   */
+  @get:Input
+  @get:Optional
+  public abstract val diffBaselineText: Property<String>
+
+  /** Must mirror `navgraph { baselineIncludesInferred }`, or the diff compares against a differently-scoped
+   *  baseline and reports every inferred transition as removed. */
+  @get:Input
+  @get:Optional
+  public abstract val diffIncludesInferred: Property<Boolean>
+
   @get:OutputFile
   public abstract val outputHtml: RegularFileProperty
 
@@ -80,10 +98,14 @@ public abstract class ExportNavGraphHtmlTask : DefaultTask() {
   public fun export() {
     val manifestFile = manifest.get().asFile
     val pkg = packageFilter.orNull.orEmpty()
-    val graph = filterGraphByPackage(parseGraph(manifestFile.readText()), pkg)
-    if (pkg.isNotBlank() && graph.nodes.isEmpty()) {
+    val extracted = filterGraphByPackage(parseGraph(manifestFile.readText()), pkg)
+    if (pkg.isNotBlank() && extracted.nodes.isEmpty()) {
       logger.warn("navgraph: no destinations under package '$pkg'; exporting an empty graph.")
     }
+    val (graph, diff) = diffBaselineText.orNull
+      ?.takeIf { it.isNotBlank() }
+      ?.let { diffAgainstBaseline(extracted, it, diffIncludesInferred.getOrElse(false), logger) }
+      ?: (extracted to null)
     val thumbsRoot: File? = thumbsDir.orNull?.asFile
     val device = parseDevice(deviceSpec.orNull)
     // "Generated" date = the graph data's timestamp (manifest mtime), not now() — keeps the output
@@ -95,9 +117,11 @@ public abstract class ExportNavGraphHtmlTask : DefaultTask() {
 
     val out = outputHtml.get().asFile
     out.parentFile?.mkdirs()
-    out.writeText(render(graph, thumbsRoot, device, date))
+    out.writeText(render(graph, thumbsRoot, device, date, diff))
     logger.lifecycle(
-      "navgraph: wrote ${out.path} (${out.length() / 1024} KB) — ${graph.nodes.size} nodes, ${graph.edges.size} edges.",
+      "navgraph: wrote ${out.path} (${out.length() / 1024} KB) — ${graph.nodes.size} nodes, " +
+        "${graph.edges.size} edges" + (diff?.let { " (${it.summary()} vs the baseline)" } ?: "") +
+        ".",
     )
   }
 
@@ -121,6 +145,7 @@ public abstract class ExportNavGraphHtmlTask : DefaultTask() {
     thumbsRoot: File?,
     device: Pair<Int, Int>?,
     date: String,
+    diff: GraphDiff?,
   ): String {
     val css = resource(CSS_PATH)
     val js = resource(JS_PATH)
@@ -152,7 +177,7 @@ public abstract class ExportNavGraphHtmlTask : DefaultTask() {
       graph.edges.forEachIndexed { i, e ->
         val from = byId[e.from] ?: return@forEachIndexed
         val to = byId[e.to] ?: return@forEachIndexed
-        append(edgeMarkup(e, from, to, srcY[i], dstY[i]))
+        append(edgeMarkup(e, from, to, srcY[i], dstY[i], diff?.edge(i)))
       }
       append(dividerMarkup(graph, byId, contentW))
     }
@@ -163,6 +188,7 @@ public abstract class ExportNavGraphHtmlTask : DefaultTask() {
             i,
             l,
             device != null,
+            diff?.node(l.node.id),
           ),
         )
       }
@@ -194,9 +220,19 @@ public abstract class ExportNavGraphHtmlTask : DefaultTask() {
       )
         .append("<button id=\"zfit\" class=\"btn\" title=\"Fit\">Fit</button>")
         .append("<button id=\"zin\" class=\"btn\" title=\"Zoom in\">+</button></span>\n")
-      append(
-        "  <span class=\"legend\"><span><b>★</b> start</span><span><b>→</b> transition</span></span>\n",
-      )
+      append("  <span class=\"legend\"><span><b>★</b> start</span><span><b>→</b> transition</span>")
+      // Only shown when there is something dashed to explain.
+      if (graph.edges.any { it.inferred }) append("<span><b>⇢</b> inferred</span>")
+      if (diff != null) {
+        append(
+          "<span class=\"chip added\">",
+        ).append(diff.count(DiffStatus.ADDED)).append(" added</span>")
+        append("<span class=\"chip removed\">").append(diff.count(DiffStatus.REMOVED))
+          .append(" removed</span>")
+        append("<span class=\"chip changed\">").append(diff.count(DiffStatus.CHANGED))
+          .append(" changed</span>")
+      }
+      append("</span>\n")
       append("</header>\n<main>\n")
       append(
         "<div id=\"stage\">\n  <div id=\"canvas\" style=\"width:",
@@ -392,7 +428,14 @@ public abstract class ExportNavGraphHtmlTask : DefaultTask() {
     }
   }
 
-  private fun edgeMarkup(e: HEdge, from: Laid, to: Laid, y1: Double, y2: Double): String {
+  private fun edgeMarkup(
+    e: HEdge,
+    from: Laid,
+    to: Laid,
+    y1: Double,
+    y2: Double,
+    status: DiffStatus?,
+  ): String {
     // Same-column edges (two stacked siblings) arc on the RIGHT as a tight C with the head pointing left into
     // the target; others route through the inter-column gap. y1/y2 are the staggered per-edge anchors.
     val path: String
@@ -428,11 +471,17 @@ public abstract class ExportNavGraphHtmlTask : DefaultTask() {
       head = "${n(x2)},${n(y2)} ${n(baseX)},${n(y2 - ARROW_W)} ${n(baseX)},${n(y2 + ARROW_W)}"
       mx = (x1 + x2) / 2
     }
+    // An inferred transition renders dashed (see `.edge.inferred` in template.css), so a call site recovered from
+    // the source is never mistaken for a declared @NavEdge. A diff status adds its own review colour on top.
+    val kind = (if (e.inferred) " inferred" else "") + diffClass(status)
     return buildString {
-      append("      <g class=\"edge-g\" data-from=\"").append(esc(e.from)).append("\" data-to=\"")
-        .append(esc(e.to)).append("\">\n")
-      append("        <path class=\"edge\" d=\"").append(path).append("\"/>\n")
-      append("        <polygon class=\"edge-head\" points=\"").append(head).append("\"/>\n")
+      append("      <g class=\"edge-g").append(kind).append("\" data-from=\"").append(esc(e.from))
+        .append("\" data-to=\"").append(esc(e.to)).append("\">\n")
+      append(
+        "        <path class=\"edge",
+      ).append(kind).append("\" d=\"").append(path).append("\"/>\n")
+      append("        <polygon class=\"edge-head").append(kind).append("\" points=\"").append(head)
+        .append("\"/>\n")
       e.label?.takeIf { it.isNotEmpty() }?.let {
         val ly = (y1 + y2) / 2 - 4
         append(
@@ -444,11 +493,12 @@ public abstract class ExportNavGraphHtmlTask : DefaultTask() {
     }
   }
 
-  private fun nodeMarkup(idx: Int, l: Laid, deviceFrame: Boolean): String {
+  private fun nodeMarkup(idx: Int, l: Laid, deviceFrame: Boolean, status: DiffStatus?): String {
     val node = l.node
     val argsPlain = node.args.joinToString(", ") { "${it.name}: ${displayType(it)}" }
     return buildString {
       append("    <article class=\"node").append(if (node.start) " start" else "")
+        .append(diffClass(status))
         .append("\" id=\"n-").append(idx).append("\" data-idx=\"").append(idx)
         .append(
           "\" data-id=\"",
@@ -595,6 +645,14 @@ public abstract class ExportNavGraphHtmlTask : DefaultTask() {
       ?: error("navgraph export resource missing on the classpath: $path")
 
   private companion object {
+    /** `" added"` / `" removed"` / `" changed"` — appended to a node's or edge's class list; see `template.css`. */
+    fun diffClass(status: DiffStatus?): String = when (status) {
+      DiffStatus.ADDED -> " added"
+      DiffStatus.REMOVED -> " removed"
+      DiffStatus.CHANGED -> " changed"
+      else -> ""
+    }
+
     const val CSS_PATH = "/navgraph-export/template.css"
     const val JS_PATH = "/navgraph-export/template.js"
 

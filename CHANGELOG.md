@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Transitions inferred from your navigation call sites**: KSP reads declarations only — it cannot see inside `entry<Home> { … backStack.add(Feed) }` — so until now every transition had to be hand-written as a `@NavEdge`. The new `inferNavEdges` task scans the module's Kotlin sources for navigation calls inside an `entry<Route> { }` / `composable<Route> { }` block or a `@NavDestination` composable body, resolves each target against the routes already in the graph, and adds what it finds as `EdgeConfidence.INFERRED` — drawn **dashed** in the IDE, the HTML/PNG exports, and Mermaid so it is never mistaken for a declared edge. Matching is by method name rather than receiver, so a custom wrapper (`navigator.add(Detail(id))`) works with only the plugin applied. A reference that does not resolve to a known route is dropped, so inference can never invent a destination, and an explicit `@NavEdge` always wins over an inferred duplicate. On by default (`navgraph { inferEdges }`); inferred transitions stay **out of the `.nav` baseline** unless `navgraph { baselineIncludesInferred = true }`, so upgrading does not move a single line of a committed baseline.
+- **Visual `navDiff` for pull requests** (`exportNavDiffHtml` / `exportNavDiffImage`): renders the graph coloured against the committed `.nav` baseline — added in green, removed as a red dashed ghost node that keeps the arguments it used to declare, changed in amber — plus a legend and counts. It compares the exact lines `navCheck` compares, so the picture and the build can never disagree. `-Pnavgraph.diff.base=<path.nav>` compares against a different baseline.
+- **Mermaid export** (`exportNavGraphMermaid`): writes `build/navgraph/nav-graph.mmd`, a `flowchart` that GitHub markdown renders natively, so the navigation graph can live in a README and be regenerated on every build. Declared transitions draw `-->`, inferred ones `-.->`. Options: `-Pnavgraph.export.direction=LR|TB|RL|BT`, `-Pnavgraph.export.mermaid.markdown=true` (wraps it in a fence), and `-Pnavgraph.export.mermaid.out=<path>`.
+- **IDE: "Show inferred transitions"** setting (Settings → NavGraph → Edges) to hide the dashed edges and see only what `@NavEdge` declares. Dashed rendering needs this release of the IDE plugin; 0.2.1 reads the same manifest but draws inferred transitions solid.
+
 ## [0.2.1] - 2026-07-04
 
 ### Fixed

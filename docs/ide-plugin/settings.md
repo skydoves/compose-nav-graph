@@ -16,6 +16,7 @@ How the transition arrows between screens are drawn.
 | **Edge color** | `3377D6` | Color of navigation arrows (the light theme value; the dark variant is derived) |
 | **Edge thickness** | `1.5` | Stroke width of edges, in px (`0.5` to `6.0`) |
 | **Show edge labels** | on | Draw the optional transition label (from `@NavEdge(label = ...)`) on labeled edges |
+| **Show inferred transitions** | on | Draw the transitions the Gradle plugin [read from your call sites](../gradle-plugin/annotations.md#inferred-transitions), dashed. Turn off to see only what `@NavEdge` declares |
 | **Curve style** | Curved (Bézier) | `Curved` draws a smooth cubic Bézier; `Straight` draws a direct segment |
 
 ## Nodes

@@ -94,6 +94,14 @@ internal class NavGraphSettingsConfigurable(private val project: Project) :
           .bindSelected(settings::showEdgeLabels)
           .comment("Draw the optional transition label on labeled edges")
       }
+      row {
+        checkBox("Show inferred transitions")
+          .bindSelected(settings::showInferredEdges)
+          .comment(
+            "Draw transitions the Gradle plugin read from navigation call sites, dashed. " +
+              "Turn off to see only the ones declared with @NavEdge",
+          )
+      }
       enumRow("Curve style:", settings::curveStyle, CurveStyle.CURVED) {
         when (it) {
           CurveStyle.CURVED -> "Curved (Bézier)"

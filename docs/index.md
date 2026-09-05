@@ -71,6 +71,8 @@ fun FeedScreenPreview() {
 
 This extracts the graph, renders the `@NavPreview` screens to device free thumbnails, merges every module, and writes `build/navgraph/nav-graph.json`.
 
+It also reads your navigation call sites, so transitions you never annotated (`entry<Home> { … backStack.add(Feed) }`) still appear, drawn dashed to keep them distinct from the ones you declared. See [Inferred transitions](gradle-plugin/annotations.md#inferred-transitions).
+
 ### 4. Open the NavGraph Graph tool window
 
 [Install the IDE plugin](ide-plugin/getting-started.md#installation) from the [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/32224-compose-navigation-graph/), then open **View** > **Tool Windows** > **NavGraph Graph**. Your app's flow map appears in the **Graph** tab. Pan, zoom, double click a node to jump to its source, and drag a connector to add a new transition. The **Previews** tab renders every `@Preview` in your project as a [Preview Gallery](ide-plugin/preview-gallery.md).

@@ -15,6 +15,7 @@
  */
 package com.github.skydoves.navgraph.idea
 
+import com.github.skydoves.navgraph.idea.model.INFERRED
 import com.github.skydoves.navgraph.idea.model.NavGraphDto
 import com.github.skydoves.navgraph.idea.model.NavNodeDto
 import com.github.skydoves.navgraph.idea.settings.NavGraphSettings
@@ -374,7 +375,13 @@ internal class NavGraphPanel(private val project: Project, parentDisposable: Dis
     // Already linked? The manifest is authoritative for what's in the source → no-op with
     // feedback (and the writer is independently idempotent, covering the brief window before a
     // regenerate updates the manifest).
-    if (currentGraph?.edges?.any { it.from == from.id && it.to == to.id } == true) {
+    //
+    // Only a DECLARED edge blocks this. An inferred one was read from a call site, not written down, so annotating
+    // it is exactly how you attach a label — refusing would leave no way to do that.
+    if (currentGraph?.edges?.any {
+        it.from == from.id && it.to == to.id && it.confidence != INFERRED
+      } == true
+    ) {
       notifyGraph(
         "Transition ${from.route} → ${to.route} already exists.",
         NotificationType.INFORMATION,

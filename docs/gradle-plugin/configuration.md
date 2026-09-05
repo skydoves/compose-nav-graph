@@ -10,9 +10,11 @@ navgraph {
     variant.set("")  // default: auto detect
     autoDependencies.set(true)  // default
     aggregate.set(true)  // default
+    inferEdges.set(true)  // default
     baselineFile.set(layout.projectDirectory.file("nav/app.nav"))  // default: nav/<module>.nav
     failOnNavChange.set(true)  // default
     allowMissingBaseline.set(false)  // default
+    baselineIncludesInferred.set(false)  // default
     galleryEnabled.set(true)  // default
     galleryRenderBackend.set(RenderBackend.AUTO)  // default
     galleryAggregate.set(true)  // default
@@ -123,6 +125,44 @@ navgraph {
 
 This applies to plain Android modules; Kotlin Multiplatform modules use their own merging.
 
+## `inferEdges`
+
+**Type:** `Boolean` · **Default:** `true`
+
+Whether to **infer** transitions from your navigation call sites. KSP reads declarations only, it cannot see inside
+`entry<Home> { … backStack.add(Feed) }`, so without this every transition has to be written out as a `@NavEdge`.
+With it on, the `inferNavEdges` task scans this module's Kotlin sources, resolves each call against the routes
+already in the graph, and adds what it finds as an inferred transition, drawn **dashed** in the IDE and in every
+export so it's never mistaken for one you declared.
+
+```kotlin
+navgraph {
+    inferEdges.set(false) // only transitions declared with @NavEdge
+}
+```
+
+A reference that doesn't resolve to a route already in the graph is dropped, so inference never invents a
+destination, and an explicit `@NavEdge` always wins over an inferred duplicate of the same transition (your label
+and intent are kept). See [Inferred transitions](annotations.md#inferred-transitions) for what it can and can't read.
+
+## `inferNavCalls`
+
+**Type:** `Set<String>` · **Default:** `add`, `addAll`, `set`, `setAll`, `navigate`, `replaceAll`, `replace`, `push`
+
+The method names [`inferEdges`](#inferedges) treats as "this navigates". Matching is by method name only, never by
+receiver, so both `backStack.add(Feed)` and a custom wrapper's `navigator.add(Feed)` are found without configuration.
+The defaults are seeded as an explicit value, so `add` extends them rather than replacing them. Add to this only if
+your app navigates through a differently named method:
+
+```kotlin
+navgraph {
+    inferNavCalls.add("openScreen")
+}
+```
+
+The route check is what keeps unrelated calls out (`uriHandler.openUri(URLs.TWITTER)` never matches a route), so a
+broader set is safe.
+
 ## `baselineFile`
 
 **Type:** `RegularFileProperty` · **Default:** `<projectDir>/nav/<module>.nav`
@@ -160,6 +200,32 @@ Whether a missing `.nav` baseline is a **skip** instead of a failure. By default
 navgraph {
     allowMissingBaseline.set(true)
 }
+```
+
+## `baselineIncludesInferred`
+
+**Type:** `Boolean` · **Default:** `false`
+
+Whether [inferred transitions](#inferedges) are written into the committed `.nav` baseline.
+
+Off by default so turning edge inference on **never breaks an existing `navCheck`**: the baseline keeps recording
+exactly the `@NavEdge`s you declared, while the graph and the exports show the inferred ones too. Upgrading from
+0.2.x doesn't move a single line of your committed baseline.
+
+Set it to `true` to hold the *inferred* graph to review as well. Then a transition disappearing from your code fails
+`navCheck` the same way a deleted `@NavEdge` does, at the cost of one `navDump` whenever the inferred set changes:
+
+```kotlin
+navgraph {
+    baselineIncludesInferred.set(true)
+}
+```
+
+Inferred lines are marked so the two kinds stay distinguishable in a diff:
+
+```
+edge Home -> Feed
+edge Home -> Settings  (inferred)
 ```
 
 ## `galleryEnabled`
