@@ -41,6 +41,34 @@ public abstract class NavGraphExtension {
   /** Whether a missing baseline is a skip instead of a failure (default `false`). */
   public abstract val allowMissingBaseline: Property<Boolean>
 
+  /** Whether the `navLint` task is registered (default `true`). */
+  public abstract val lintEnabled: Property<Boolean>
+
+  /** Whether `navLint` fails the build on a finding (default `false`; `false` → warn). Turn it on in CI. */
+  public abstract val failOnNavLint: Property<Boolean>
+
+  /**
+   * Whether `navLint` runs as part of `check` (default `false`).
+   *
+   * Off by default because lint reads the **aggregated** graph, so gating `check` on it makes `check` build every
+   * dependency module's graph — including their thumbnail renders, which in turn narrows those modules' unit-test
+   * tasks to the render test alone. `navCheck` stays in `check` precisely because it reads the render-free
+   * manifest instead. Prefer running `navLint` as its own CI step; turn this on only when the build has no
+   * dependency modules to drag in, or when that cost is acceptable.
+   */
+  public abstract val lintOnCheck: Property<Boolean>
+
+  /**
+   * `navLint` rule ids to skip: `no-start`, `multiple-starts`, `unreachable`, `unbound-route` (default empty).
+   */
+  public abstract val navLintDisabledRules: SetProperty<String>
+
+  /**
+   * Route FQNs `navLint` reports nothing for (default empty), for a destination left unwired on purpose — one
+   * reached only by a deep link, or a screen still being built.
+   */
+  public abstract val navLintIgnoredRoutes: SetProperty<String>
+
   /**
    * Whether to **infer** transitions from navigation call sites (default `true`). KSP reads declarations only — it
    * cannot see inside `entry<Home> { … backStack.add(Feed) }` — so without this every transition has to be written

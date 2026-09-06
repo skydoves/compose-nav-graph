@@ -322,6 +322,29 @@ navgraph {
 The full guide, including multi module baselines and CI integration, lives in the
 **[Nav Baseline documentation](https://skydoves.github.io/compose-nav-graph/gradle-plugin/baseline/)**.
 
+### Check the graph is actually navigable
+
+The baseline reviews how navigation *changed*. `navLint` asks what it *is*: it walks the merged graph and reports
+screens nothing can reach, a missing or duplicated start destination, and routes no `@NavDestination` binds.
+
+```bash
+./gradlew :app:navLint
+```
+
+```
+navgraph: 2 navigation lint finding(s):
+
+  [unreachable] Checkout
+      no path from Home
+  [unbound-route] Orphan
+      declared as a route but no @NavDestination binds a screen to it
+```
+
+`navCheck` never catches these, because an unreachable screen sits in the baseline like any other and passes
+`check` forever. Lint warns by default (`navgraph { failOnNavLint }` gates CI) and runs as its own step rather
+than inside `check`, since it reads the whole app's aggregated graph. The full guide lives in the
+**[Nav Lint documentation](https://skydoves.github.io/compose-nav-graph/gradle-plugin/lint/)**.
+
 ### Review the change as a picture
 
 The same comparison also renders. Because git already holds the baseline, "before" costs nothing:

@@ -15,6 +15,7 @@ nav:
     - 'Annotations': gradle-plugin/annotations.md
     - 'Configuration': gradle-plugin/configuration.md
     - 'Nav Baseline': gradle-plugin/baseline.md
+    - 'Nav Lint': gradle-plugin/lint.md
     - 'Exporting': gradle-plugin/export.md
   - 'IDE Plugin':
     - 'Getting Started': ide-plugin/getting-started.md

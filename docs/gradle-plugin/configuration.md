@@ -14,6 +14,9 @@ navgraph {
     baselineFile.set(layout.projectDirectory.file("nav/app.nav"))  // default: nav/<module>.nav
     failOnNavChange.set(true)  // default
     allowMissingBaseline.set(false)  // default
+    lintEnabled.set(true)  // default
+    failOnNavLint.set(false)  // default
+    lintOnCheck.set(false)  // default
     baselineIncludesInferred.set(false)  // default
     galleryEnabled.set(true)  // default
     galleryRenderBackend.set(RenderBackend.AUTO)  // default
@@ -226,6 +229,61 @@ Inferred lines are marked so the two kinds stay distinguishable in a diff:
 ```
 edge Home -> Feed
 edge Home -> Settings  (inferred)
+```
+
+## `lintEnabled`
+
+**Type:** `Boolean` · **Default:** `true`
+
+Whether the `navLint` task is registered. See [Nav Lint](lint.md).
+
+## `failOnNavLint`
+
+**Type:** `Boolean` · **Default:** `false`
+
+Whether `navLint` fails the build on a finding. Warns by default so adding lint to an existing project reports
+without blocking; turn it on in CI once the findings are down to zero.
+
+```kotlin
+navgraph {
+    failOnNavLint.set(true)
+}
+```
+
+## `lintOnCheck`
+
+**Type:** `Boolean` · **Default:** `false`
+
+Whether `navLint` runs as part of `check`.
+
+Off by default because lint reads the **aggregated** graph, which is the only input that can tell a route another
+module owns from a genuinely unbound one. Gating `check` on it would make `check` build every dependency module's
+graph, thumbnail renders included — which is exactly why `navCheck` reads the render-free manifest instead. Prefer
+`./gradlew check navLint` as two CI steps; turn this on when the build has no dependency modules to drag in.
+
+## `navLintDisabledRules`
+
+**Type:** `Set<String>` · **Default:** empty
+
+`navLint` rule ids to skip: `unreachable`, `no-start`, `multiple-starts`, `unbound-route`.
+
+```kotlin
+navgraph {
+    navLintDisabledRules.add("unbound-route")
+}
+```
+
+## `navLintIgnoredRoutes`
+
+**Type:** `Set<String>` · **Default:** empty
+
+Route FQNs `navLint` reports nothing for, from any rule. For a destination left unwired on purpose — one reached
+only by a deep link, or a screen still being built.
+
+```kotlin
+navgraph {
+    navLintIgnoredRoutes.add("com.app.DeepLinkOnly")
+}
 ```
 
 ## `galleryEnabled`

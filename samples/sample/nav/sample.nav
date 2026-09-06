@@ -20,6 +20,7 @@ edge Catalog -> Cart  "cart"
 edge Catalog -> Product  "open"
 edge Checkout -> Orders  "place order"
 edge Feed -> Profile
+edge Home -> Catalog  "shop"
 edge Home -> Feed
 edge Home -> Settings
 edge Orders -> OrderDetail  "open"

@@ -24,6 +24,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 
 class NavGraphPluginTest {
 
@@ -31,6 +32,20 @@ class NavGraphPluginTest {
     ProjectBuilder.builder().withName("sample").build().also {
       it.pluginManager.apply("com.github.skydoves.navgraph")
     }
+
+  /** A project past `afterEvaluate`, so the tasks the plugin registers there exist and `check` is wired. */
+  private fun evaluatedProject(configure: (NavGraphExtension) -> Unit = {}): Project {
+    val project = ProjectBuilder.builder().withName("sample").build()
+    // `base` is what creates `check`; Android and KMP both bring it, and the plugin gates its wiring on it.
+    project.pluginManager.apply("base")
+    project.pluginManager.apply("com.github.skydoves.navgraph")
+    val ext = project.extensions.getByType(NavGraphExtension::class.java)
+    ext.renderThumbnails.set(false)
+    ext.autoDependencies.set(false)
+    configure(ext)
+    (project as ProjectInternal).evaluate()
+    return project
+  }
 
   @Test
   fun registersNavGraphExtensionWithDefaults() {
@@ -171,6 +186,105 @@ class NavGraphPluginTest {
   }
 
   @Test
+  fun navLintIsRegisteredButStaysOutOfCheckByDefault() {
+    // Out of `check` on purpose: navLint reads the AGGREGATED graph, so gating check on it would build every
+    // dependency module's graph and its thumbnail render. navCheck reads the render-free manifest and may stay.
+    val project = evaluatedProject()
+    assertNotNull(project.tasks.findByName("navLint"))
+    assertEquals("navgraph", project.tasks.getByName("navLint").group)
+    val checkDeps = project.tasks.getByName("check").taskDependencies.getDependencies(null).map {
+      it.name
+    }
+    assertFalse("navLint must not be wired into check by default", "navLint" in checkDeps)
+    assertTrue("navCheck must stay wired into check", "navCheck" in checkDeps)
+  }
+
+  @Test
+  fun lintOnCheckWiresNavLintIntoCheck() {
+    val project = evaluatedProject { it.lintOnCheck.set(true) }
+    val checkDeps = project.tasks.getByName("check").taskDependencies.getDependencies(null).map {
+      it.name
+    }
+    assertTrue("navLint", "navLint" in checkDeps)
+  }
+
+  @Test
+  fun lintEnabledFalseSkipsRegistration() {
+    val project = evaluatedProject { it.lintEnabled.set(false) }
+    assertNull(project.tasks.findByName("navLint"))
+  }
+
+  @Test
+  fun addingAnIgnoredRouteKeepsTheEmptyDefault() {
+    // Same SetProperty trap as inferNavCalls: `add` on a convention-only property discards it. Both lint sets are
+    // seeded with `set`, so `add` extends rather than replaces — here the default is empty, so this pins that
+    // `add` works at all rather than silently no-op'ing a later `set`.
+    val ext = navgraphProject().extensions.getByType(NavGraphExtension::class.java)
+    assertEquals(emptySet<String>(), ext.navLintIgnoredRoutes.get())
+    ext.navLintIgnoredRoutes.add("com.app.Orphan")
+    assertEquals(setOf("com.app.Orphan"), ext.navLintIgnoredRoutes.get())
+  }
+
+  @Test
+  fun navLintWarnsInsteadOfFailingByDefault() {
+    val project = ProjectBuilder.builder().build()
+    val task = project.tasks.register("navLint", NavLintTask::class.java).get()
+    task.manifest.set(writeManifest(project, MANIFEST_UNREACHABLE))
+    task.failOnNavLint.set(false)
+    task.lint()
+  }
+
+  @Test
+  fun navLintFailsWithFindingsWhenFailOnNavLint() {
+    val project = ProjectBuilder.builder().build()
+    val task = project.tasks.register("navLint", NavLintTask::class.java).get()
+    task.manifest.set(writeManifest(project, MANIFEST_UNREACHABLE))
+    task.failOnNavLint.set(true)
+    task.aggregated.set(true)
+
+    val error = runCatching { task.lint() }.exceptionOrNull()
+    assertNotNull("navLint must fail when failOnNavLint is on", error)
+    val message = error!!.message!!
+    assertTrue(message, "navigation lint finding(s)" in message)
+    assertTrue(message, "[unreachable] Ghost" in message)
+    assertTrue(message, "navLintIgnoredRoutes" in message)
+  }
+
+  @Test
+  fun navLintNotesAPartialGraphWhenNotAggregated() {
+    val project = ProjectBuilder.builder().build()
+    val task = project.tasks.register("navLint", NavLintTask::class.java).get()
+    task.manifest.set(writeManifest(project, MANIFEST_UNREACHABLE))
+    task.failOnNavLint.set(true)
+    task.aggregated.set(false)
+
+    val message = runCatching { task.lint() }.exceptionOrNull()!!.message!!
+    assertTrue(message, "own graph, not the whole app's" in message)
+  }
+
+  @Test
+  fun aggregationFillsAStubFromTheModuleThatOwnsTheRoute() {
+    // The umbrella's own manifest is merged first and, with no thumbnails anywhere (structure-only, or KMP), used
+    // to win outright — keeping its bare stub and dropping the owner's click target, which then reads to navLint
+    // as a route no @NavDestination binds.
+    val project = ProjectBuilder.builder().build()
+    val task = project.tasks.register("aggregateNavGraph", AggregateNavGraphTask::class.java).get()
+    task.manifestFileName.set("nav-graph.json")
+    task.ownManifest.set(writeManifest(project, STUB_MANIFEST))
+    val depDir = project.layout.buildDirectory.dir("dep").get().asFile.apply { mkdirs() }
+    File(depDir, "nav-graph.json").writeText(OWNER_MANIFEST)
+    task.dependencyGraphDirs.from(depDir)
+    val out = project.layout.buildDirectory.dir("aggregated").get().asFile
+    task.outputDir.set(out)
+    task.aggregate()
+
+    val node = parseGraph(File(out, "nav-graph.json").readText()).nodes.single { it.id == "x.Feed" }
+    assertEquals("x.FeedScreen", node.clickTargetFqn)
+    assertEquals("Feed.kt", node.sourceFile)
+    assertTrue("the start flag must survive the merge", node.start)
+  }
+
+  @Test
   fun navCheckPassesWhenBaselineMatches() {
     val project = ProjectBuilder.builder().build()
     val task = project.tasks.register("navCheck", NavCheckTask::class.java).get()
@@ -262,6 +376,42 @@ class NavGraphPluginTest {
     }
 
   private companion object {
+    // What an umbrella module that only REFERENCES x.Feed extracts: id and route, nothing else.
+    val STUB_MANIFEST = """
+      {
+        "navVersion": "navgraph",
+        "schemaVersion": 1,
+        "nodes": [{"id": "x.Feed", "route": "Feed", "previews": []}],
+        "edges": []
+      }
+    """.trimIndent()
+
+    // What the module that actually declares x.Feed extracts.
+    val OWNER_MANIFEST = """
+      {
+        "navVersion": "navgraph",
+        "schemaVersion": 1,
+        "nodes": [{
+          "id": "x.Feed", "route": "Feed", "start": true,
+          "clickTargetFqn": "x.FeedScreen", "sourceFile": "Feed.kt", "sourceLine": 12
+        }],
+        "edges": []
+      }
+    """.trimIndent()
+
+    // Home is the start; Ghost is bound to a screen but nothing links to it.
+    val MANIFEST_UNREACHABLE = """
+      {
+        "navVersion": "navgraph",
+        "schemaVersion": 1,
+        "nodes": [
+          {"id": "com.app.Home", "route": "Home", "start": true, "clickTargetFqn": "com.app.HomeScreen"},
+          {"id": "com.app.Ghost", "route": "Ghost", "clickTargetFqn": "com.app.GhostScreen"}
+        ],
+        "edges": []
+      }
+    """.trimIndent()
+
     val MANIFEST = """
       {
         "nodes": [
