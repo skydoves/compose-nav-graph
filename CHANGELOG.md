@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2026-09-18
 
 ### Added
 - **Transitions inferred from your navigation call sites**: KSP reads declarations only — it cannot see inside `entry<Home> { … backStack.add(Feed) }` — so until now every transition had to be hand-written as a `@NavEdge`. The new `inferNavEdges` task scans the module's Kotlin sources for navigation calls inside an `entry<Route> { }` / `composable<Route> { }` block or a `@NavDestination` composable body, resolves each target against the routes already in the graph, and adds what it finds as `EdgeConfidence.INFERRED` — drawn **dashed** in the IDE, the HTML/PNG exports, and Mermaid so it is never mistaken for a declared edge. Matching is by method name rather than receiver, so a custom wrapper (`navigator.add(Detail(id))`) works with only the plugin applied. A reference that does not resolve to a known route is dropped, so inference can never invent a destination, and an explicit `@NavEdge` always wins over an inferred duplicate. On by default (`navgraph { inferEdges }`); inferred transitions stay **out of the `.nav` baseline** unless `navgraph { baselineIncludesInferred = true }`, so upgrading does not move a single line of a committed baseline.
