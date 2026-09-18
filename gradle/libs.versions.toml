@@ -18,7 +18,7 @@ junit4 = "4.13.2"
 robolectric = "4.15.1"
 
 kotlinIdea = "2.3.0"
-intellijPlatform = "2.10.1"
+intellijPlatform = "2.19.0"
 intellijIdea = "2025.2"
 
 [libraries]

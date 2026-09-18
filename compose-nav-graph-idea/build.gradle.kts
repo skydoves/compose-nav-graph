@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel
+
 plugins {
   alias(libs.plugins.kotlin.jvm.idea)
   alias(libs.plugins.intellij.platform)
@@ -44,14 +46,16 @@ intellijPlatform {
   pluginConfiguration {
     ideaVersion {
       sinceBuild = "242"
-      untilBuild = "261.*"
+      // No upper bound: a fixed until-build blocks installs on newer IDEs the plugin runs on.
+      untilBuild = provider { null }
     }
   }
   pluginVerification {
     ides { recommended() }
     failureLevel = listOf(
-      org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel.INVALID_PLUGIN,
-      org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel.NOT_DYNAMIC,
+      FailureLevel.INVALID_PLUGIN,
+      FailureLevel.NOT_DYNAMIC,
+      FailureLevel.COMPATIBILITY_PROBLEMS,
     )
   }
 }

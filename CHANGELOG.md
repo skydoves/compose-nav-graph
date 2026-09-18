@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Aggregation keeps the richest copy of a node field by field** rather than picking one whole copy by thumbnail count. With `renderThumbnails = false`, and on KMP, no copy had thumbnails, so an umbrella module that merely referenced a route kept its own stub and discarded the owning module's click target and source location.
 - **IDE: "Show inferred transitions"** setting (Settings → NavGraph → Edges) to hide the dashed edges and see only what `@NavEdge` declares. Dashed rendering needs this release of the IDE plugin; 0.2.1 reads the same manifest but draws inferred transitions solid.
 
+### Fixed
+- **The IDE plugin installs on Android Studio Rabbit and every later IDE** ([#28](https://github.com/skydoves/compose-nav-graph/issues/28)): the plugin declared `untilBuild = "261.*"`, which the build stamps into the descriptor it ships as `until-build="261.*"`, so IntelliJ platform 262 (Android Studio Rabbit 1 2026.2.1, IntelliJ IDEA 2026.2) reported `Incompatible: requires IDE build 261.* or earlier` and refused to install — even though nothing in the plugin is 262-incompatible. The ceiling is **removed** rather than raised to 262: the tool window is built on platform APIs and stable Kotlin PSI, and the Kotlin plugin dependency is optional with a linkage-error fallback, so a fixed upper bound only lags each IDE release and blocks installs on IDEs the plugin already runs on. The Plugin Verifier now reaches those newer builds as well — it silently stopped at 252 before, so the range was asserted rather than tested — and `verifyPlugin` now fails on a compatibility problem instead of reporting one and passing. Verified against the exact build from the report (`AI-262.9437.185`) plus IntelliJ 262 and 263: no compatibility problems anywhere from 242 to 263.
+
 ## [0.2.1] - 2026-07-04
 
 ### Fixed
