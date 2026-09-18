@@ -46,8 +46,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.skydoves.navgraph.annotations.NavDestination
 import com.github.skydoves.navgraph.annotations.NavEdge
-import com.github.skydoves.navgraph.sample.catalog.Catalog
 import com.github.skydoves.navgraph.annotations.NavPreview
+import com.github.skydoves.navgraph.sample.catalog.Catalog
 
 /*
  * The app's start destination, styled as a small "home dashboard" so demo
